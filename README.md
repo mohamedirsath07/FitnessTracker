@@ -7,6 +7,10 @@ A full-stack **MERN** (MongoDB, Express.js, React, Node.js) fitness tracking app
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb)
 ![Three.js](https://img.shields.io/badge/Three.js-3D-000000?logo=three.js)
 
+## 🌐 Live Demo
+
+**[🚀 kaizu.vercel.app](https://kaizu.vercel.app)**
+
 ## ✨ Features
 
 - 🎮 **Gamification System** - Earn XP, level up ranks (E → S → National), maintain streaks
