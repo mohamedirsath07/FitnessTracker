@@ -73,7 +73,9 @@ export function AuthProvider({ children }) {
     const register = async (userData) => {
         try {
             setError(null);
+            console.log('Attempting registration with:', { ...userData, password: '***' });
             const response = await authAPI.register(userData);
+            console.log('Registration successful:', response.data);
 
             // Store token and user
             localStorage.setItem('token', response.data.token);
@@ -82,7 +84,21 @@ export function AuthProvider({ children }) {
 
             return { success: true };
         } catch (err) {
-            const message = err.response?.data?.message || 'Registration failed';
+            console.error('Registration error:', err);
+            console.error('Error response:', err.response?.data);
+            console.error('Error status:', err.response?.status);
+
+            // Get detailed error message
+            let message = 'Registration failed';
+            if (err.response?.data?.message) {
+                message = err.response.data.message;
+            } else if (err.response?.data?.errors) {
+                // Handle validation errors
+                message = err.response.data.errors.map(e => e.msg).join(', ');
+            } else if (err.message) {
+                message = err.message;
+            }
+
             setError(message);
             return { success: false, error: message };
         }
