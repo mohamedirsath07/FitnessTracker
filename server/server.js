@@ -43,10 +43,12 @@ const progressRoutes = require('./routes/progress');
 
 /**
  * Connect to MongoDB
- * We call this before starting the server
- * If it fails, the app will exit (see db.js)
+ * Only connect when running as standalone server (not in serverless)
+ * In serverless mode, connection is handled by api/index.js
  */
-connectDB();
+if (require.main === module) {
+    connectDB();
+}
 
 /**
  * Create Express Application
@@ -194,8 +196,10 @@ app.use((err, req, res, next) => {
  */
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`
+// Only start server when running directly (not in serverless)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
 ║   🏋️  FitnessTracker API Server                          ║
@@ -216,7 +220,8 @@ app.listen(PORT, () => {
 ║                                                          ║
 ╚══════════════════════════════════════════════════════════╝
   `);
-});
+    });
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
@@ -224,3 +229,6 @@ process.on('unhandledRejection', (err) => {
     // Close server & exit process
     process.exit(1);
 });
+
+// Export app for serverless use
+module.exports = app;
