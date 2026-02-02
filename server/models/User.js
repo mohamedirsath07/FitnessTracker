@@ -56,8 +56,7 @@ const UserSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, 'Password is required'],
-        minlength: [6, 'Password must be at least 6 characters'],
-        select: false  // Won't include password when querying users
+        minlength: [6, 'Password must be at least 6 characters']
     },
 
     // Body Metrics - Used for 3D visualization & calculations

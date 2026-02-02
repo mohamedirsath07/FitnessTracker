@@ -62,8 +62,7 @@ const protect = async (req, res, next) => {
         // { id: 'user_id_here', iat: issued_at, exp: expires_at }
 
         // Find the user and add to request object
-        // select('-password') excludes the password field
-        req.user = await User.findById(decoded.id).select('-password');
+        req.user = await User.findById(decoded.id);
 
         if (!req.user) {
             return res.status(401).json({

@@ -155,13 +155,12 @@ router.post(
             const { email, username, password } = req.body;
 
             // Find user by email or username
-            // .select('+password') overrides the 'select: false' in the schema
             const user = await User.findOne({
                 $or: [
                     { email: email?.toLowerCase() },
                     { username }
                 ]
-            }).select('+password');
+            });
 
             if (!user) {
                 return res.status(401).json({
