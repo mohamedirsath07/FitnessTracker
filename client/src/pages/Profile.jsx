@@ -290,7 +290,7 @@ export default function Profile() {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-zinc-900/50 p-5 rounded-2xl border border-white/5 text-center">
                         <div className="text-3xl font-bold text-orange-400">{user?.streak || 0}</div>
-                        <div className="text-xs text-zinc-500 mt-1">Day Streak</div>
+                        <div className="text-xs text-zinc-500 mt-1">🔥 Day Streak</div>
                     </div>
                     <div className="bg-zinc-900/50 p-5 rounded-2xl border border-white/5 text-center">
                         <div className="text-3xl font-bold text-blue-400">{(user?.xp || 0).toLocaleString()}</div>

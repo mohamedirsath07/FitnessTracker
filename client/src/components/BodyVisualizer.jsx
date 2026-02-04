@@ -328,7 +328,7 @@ export default function BodyVisualizer({ weight = 70, bodyFat = 20, gender = 'ma
 
             {!compact && (
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 text-[9px] text-zinc-500">
-                    Drag to rotate • Scroll to zoom
+                    👆 Drag to rotate • Scroll to zoom
                 </div>
             )}
         </div>

@@ -117,12 +117,12 @@ export default function Dashboard() {
 
         // Today's progress insight
         if (todayBurned >= dailyGoal) {
-            insights.push({ type: 'success', icon: <Zap size={16} />, text: `Goal achieved! You burned ${todayBurned} kcal today!` });
+            insights.push({ type: 'success', icon: <Zap size={16} />, text: `🔥 Goal crushed! You burned ${todayBurned} kcal today!` });
         } else if (todayBurned > 0) {
             const remaining = dailyGoal - todayBurned;
-            insights.push({ type: 'info', icon: <Target size={16} />, text: `Keep going! ${remaining} kcal more to hit your daily goal` });
+            insights.push({ type: 'info', icon: <Target size={16} />, text: `💪 Keep going! ${remaining} kcal more to hit your daily goal` });
         } else {
-            insights.push({ type: 'warning', icon: <Activity size={16} />, text: `No workout today yet. Time to get moving!` });
+            insights.push({ type: 'warning', icon: <Activity size={16} />, text: `🏃 No workout today yet. Time to get moving!` });
         }
 
         // Calorie balance insight
@@ -137,14 +137,14 @@ export default function Dashboard() {
 
         // Weekly consistency insight
         if (totalWorkouts >= 5) {
-            insights.push({ type: 'success', icon: <Dumbbell size={16} />, text: `Excellent! ${totalWorkouts} workouts this week. You're consistent!` });
+            insights.push({ type: 'success', icon: <Dumbbell size={16} />, text: `✨ Excellent! ${totalWorkouts} workouts this week. You're on fire!` });
         } else if (totalWorkouts >= 3) {
             insights.push({ type: 'info', icon: <Dumbbell size={16} />, text: `Good week with ${totalWorkouts} workouts. Try for 5 next week!` });
         }
 
         // Streak insight
         if (user?.streak >= 7) {
-            insights.push({ type: 'success', icon: <Flame size={16} />, text: `${user.streak} day streak! Keep it going!` });
+            insights.push({ type: 'success', icon: <Flame size={16} />, text: `🔥 ${user.streak} day streak! You're unstoppable!` });
         }
 
         return insights;
@@ -260,7 +260,7 @@ export default function Dashboard() {
                                         />
                                         <Legend 
                                             wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                                            formatter={(value) => value === 'intake' ? 'Calories Consumed' : 'Calories Burned'}
+                                            formatter={(value) => value === 'intake' ? '🍽️ Calories Intake' : '🔥 Calories Burned'}
                                         />
                                         <Bar dataKey="intake" fill="url(#colorIntake)" radius={[4, 4, 0, 0]} name="intake" />
                                         <Bar dataKey="burned" fill="url(#colorBurned)" radius={[4, 4, 0, 0]} name="burned" />

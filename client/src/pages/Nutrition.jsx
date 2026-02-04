@@ -462,8 +462,8 @@ export default function Nutrition() {
                                                     onClick={() => handleSelectFood(food)}
                                                     className="w-full flex items-center gap-3 p-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl text-left transition-all"
                                                 >
-                                                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
-                                                        <Utensils size={20} className="text-green-400" />
+                                                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center text-xl">
+                                                        🍽️
                                                     </div>
                                                     <div className="flex-1">
                                                         <div className="font-medium">{food.name}</div>
@@ -482,8 +482,8 @@ export default function Nutrition() {
                                 <div className="p-4 space-y-5">
                                     {/* Selected Food */}
                                     <div className="flex items-center gap-4 p-4 bg-zinc-800/50 rounded-xl">
-                                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
-                                            <Utensils size={28} className="text-green-400" />
+                                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center text-2xl">
+                                            🍽️
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-lg">{selectedFood.name}</h3>
