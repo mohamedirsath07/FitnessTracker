@@ -9,7 +9,7 @@ A full-stack **MERN** (MongoDB, Express.js, React, Node.js) fitness tracking app
 
 ## 🌐 Live Demo
 
-**[🚀 kaizu.vercel.app](https://kaizu.vercel.app)**
+**[🚀https://level-up-lime.vercel.app/]((https://level-up-lime.vercel.app/))**
 
 ## ✨ Features
 
