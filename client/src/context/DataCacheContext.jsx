@@ -73,14 +73,10 @@ export function DataCacheProvider({ children }) {
         
         fetching.current.nutrition = true;
         try {
-            const [mealsRes, commonRes] = await Promise.all([
-                mealAPI.getToday(),
-                mealAPI.getCommon()
-            ]);
+            const mealsRes = await mealAPI.getToday();
             const data = {
                 meals: mealsRes.data.meals,
                 summary: mealsRes.data.summary,
-                commonFoods: commonRes.data.foods || []
             };
             cache.current.nutrition = { data, stale: false };
             return data;

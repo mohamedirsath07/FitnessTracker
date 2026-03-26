@@ -1,27 +1,12 @@
-/**
- * ============================================
- * REGISTER PAGE - With Visual Body Fat Selector
- * ============================================
- * 
- * Features:
- * - Multi-step registration form
- * - Visual body fat percentage reference images
- * - Easy selection with visual guides
- */
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Button, Input, Card } from '../components/ui';
+import { Button, Input } from '../components/ui';
 import { Scale, Ruler, User, Target, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
-// Body fat visual reference component
 const BodyFatVisual = ({ percentage, gender, isSelected, onClick, label, description, category }) => {
-    // SVG body silhouettes based on body fat percentage
     const getBodyShape = () => {
         const isMale = gender === 'male';
-
-        // Different body widths based on body fat
         const getWidth = () => {
             if (percentage <= 12) return isMale ? 28 : 26;
             if (percentage <= 18) return isMale ? 32 : 30;
@@ -29,33 +14,20 @@ const BodyFatVisual = ({ percentage, gender, isSelected, onClick, label, descrip
             if (percentage <= 30) return isMale ? 44 : 42;
             return isMale ? 52 : 50;
         };
-
         const width = getWidth();
-        const color = isSelected ? '#3b82f6' : '#52525b';
+        const color = isSelected ? '#3B82F6' : '#52525b';
         const fillOpacity = isSelected ? 0.3 : 0.1;
 
         if (isMale) {
             return (
                 <svg viewBox="0 0 80 120" className="w-full h-full">
-                    {/* Head */}
                     <ellipse cx="40" cy="12" rx="10" ry="11" fill={color} fillOpacity={fillOpacity} stroke={color} strokeWidth="1.5" />
-                    {/* Neck */}
                     <rect x="36" y="22" width="8" height="6" fill={color} fillOpacity={fillOpacity} stroke={color} strokeWidth="1" />
-                    {/* Torso */}
-                    <path
-                        d={`M${40 - width / 2} 28 
-                            Q${40 - width / 2 - 4} 50 ${40 - width / 2 + 2} 75 
-                            L${40 + width / 2 - 2} 75 
-                            Q${40 + width / 2 + 4} 50 ${40 + width / 2} 28 Z`}
-                        fill={color} fillOpacity={fillOpacity} stroke={color} strokeWidth="1.5"
-                    />
-                    {/* Arms */}
+                    <path d={`M${40 - width / 2} 28 Q${40 - width / 2 - 4} 50 ${40 - width / 2 + 2} 75 L${40 + width / 2 - 2} 75 Q${40 + width / 2 + 4} 50 ${40 + width / 2} 28 Z`} fill={color} fillOpacity={fillOpacity} stroke={color} strokeWidth="1.5" />
                     <path d={`M${40 - width / 2} 30 Q${40 - width / 2 - 12} 45 ${40 - width / 2 - 8} 65`} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />
                     <path d={`M${40 + width / 2} 30 Q${40 + width / 2 + 12} 45 ${40 + width / 2 + 8} 65`} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />
-                    {/* Legs */}
                     <path d={`M${40 - width / 4} 75 L${40 - width / 4 - 3} 115`} fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" />
                     <path d={`M${40 + width / 4} 75 L${40 + width / 4 + 3} 115`} fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" />
-                    {/* Abs indication for low body fat */}
                     {percentage <= 15 && (
                         <>
                             <line x1="40" y1="40" x2="40" y2="65" stroke={color} strokeWidth="0.5" opacity="0.5" />
@@ -66,91 +38,49 @@ const BodyFatVisual = ({ percentage, gender, isSelected, onClick, label, descrip
                     )}
                 </svg>
             );
-        } else {
-            return (
-                <svg viewBox="0 0 80 120" className="w-full h-full">
-                    {/* Head */}
-                    <ellipse cx="40" cy="12" rx="9" ry="10" fill={color} fillOpacity={fillOpacity} stroke={color} strokeWidth="1.5" />
-                    {/* Neck */}
-                    <rect x="37" y="21" width="6" height="5" fill={color} fillOpacity={fillOpacity} stroke={color} strokeWidth="1" />
-                    {/* Torso - hourglass shape for female */}
-                    <path
-                        d={`M${40 - width / 2 + 4} 26 
-                            Q${40 - width / 2 - 2} 35 ${40 - width / 2} 45
-                            Q${40 - width / 2 + 6} 55 ${40 - width / 2 + 2} 65
-                            Q${40 - width / 2 - 2} 72 ${40 - width / 2 + 4} 78
-                            L${40 + width / 2 - 4} 78 
-                            Q${40 + width / 2 + 2} 72 ${40 + width / 2 - 2} 65
-                            Q${40 + width / 2 - 6} 55 ${40 + width / 2} 45
-                            Q${40 + width / 2 + 2} 35 ${40 + width / 2 - 4} 26 Z`}
-                        fill={color} fillOpacity={fillOpacity} stroke={color} strokeWidth="1.5"
-                    />
-                    {/* Arms */}
-                    <path d={`M${40 - width / 2 + 4} 28 Q${40 - width / 2 - 10} 42 ${40 - width / 2 - 6} 60`} fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
-                    <path d={`M${40 + width / 2 - 4} 28 Q${40 + width / 2 + 10} 42 ${40 + width / 2 + 6} 60`} fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
-                    {/* Legs */}
-                    <path d={`M${40 - width / 4 + 2} 78 L${40 - width / 4 - 1} 115`} fill="none" stroke={color} strokeWidth="5.5" strokeLinecap="round" />
-                    <path d={`M${40 + width / 4 - 2} 78 L${40 + width / 4 + 1} 115`} fill="none" stroke={color} strokeWidth="5.5" strokeLinecap="round" />
-                </svg>
-            );
         }
-    };
-
-    const getCategoryColor = () => {
-        if (percentage <= 12) return 'from-cyan-500 to-blue-500';
-        if (percentage <= 18) return 'from-blue-500 to-green-500';
-        if (percentage <= 24) return 'from-green-500 to-yellow-500';
-        if (percentage <= 30) return 'from-yellow-500 to-orange-500';
-        return 'from-orange-500 to-red-500';
+        return (
+            <svg viewBox="0 0 80 120" className="w-full h-full">
+                <ellipse cx="40" cy="12" rx="9" ry="10" fill={color} fillOpacity={fillOpacity} stroke={color} strokeWidth="1.5" />
+                <rect x="37" y="21" width="6" height="5" fill={color} fillOpacity={fillOpacity} stroke={color} strokeWidth="1" />
+                <path d={`M${40 - width / 2 + 4} 26 Q${40 - width / 2 - 2} 35 ${40 - width / 2} 45 Q${40 - width / 2 + 6} 55 ${40 - width / 2 + 2} 65 Q${40 - width / 2 - 2} 72 ${40 - width / 2 + 4} 78 L${40 + width / 2 - 4} 78 Q${40 + width / 2 + 2} 72 ${40 + width / 2 - 2} 65 Q${40 + width / 2 - 6} 55 ${40 + width / 2} 45 Q${40 + width / 2 + 2} 35 ${40 + width / 2 - 4} 26 Z`} fill={color} fillOpacity={fillOpacity} stroke={color} strokeWidth="1.5" />
+                <path d={`M${40 - width / 2 + 4} 28 Q${40 - width / 2 - 10} 42 ${40 - width / 2 - 6} 60`} fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
+                <path d={`M${40 + width / 2 - 4} 28 Q${40 + width / 2 + 10} 42 ${40 + width / 2 + 6} 60`} fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
+                <path d={`M${40 - width / 4 + 2} 78 L${40 - width / 4 - 1} 115`} fill="none" stroke={color} strokeWidth="5.5" strokeLinecap="round" />
+                <path d={`M${40 + width / 4 - 2} 78 L${40 + width / 4 + 1} 115`} fill="none" stroke={color} strokeWidth="5.5" strokeLinecap="round" />
+            </svg>
+        );
     };
 
     return (
         <button
             type="button"
             onClick={onClick}
-            className={`relative flex flex-col items-center p-3 rounded-2xl border-2 transition-all duration-300 ${isSelected
-                ? 'border-blue-500 bg-blue-500/20 scale-105 shadow-lg shadow-blue-500/20'
-                : 'border-zinc-700 bg-zinc-900/50 hover:border-zinc-500 hover:bg-zinc-800/50'
-                }`}
+            className={`relative flex flex-col items-center p-3 rounded-xl border transition-all duration-200 ${isSelected
+                ? 'border-blue-500/40 bg-blue-500/8'
+                : 'border-white/[0.06] bg-[var(--bg-surface)] hover:border-white/[0.12]'
+            }`}
         >
-            {/* Selection indicator */}
             {isSelected && (
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <Check size={14} className="text-white" />
+                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                    <Check size={12} className="text-white" />
                 </div>
             )}
-
-            {/* Body silhouette */}
-            <div className="w-16 h-24 mb-2">
-                {getBodyShape()}
-            </div>
-
-            {/* Percentage */}
-            <div className={`text-lg font-bold bg-gradient-to-r ${getCategoryColor()} bg-clip-text text-transparent`}>
-                {label}
-            </div>
-
-            {/* Category */}
-            <div className={`text-[10px] uppercase tracking-wider ${isSelected ? 'text-blue-400' : 'text-zinc-500'}`}>
-                {category}
-            </div>
-
-            {/* Description */}
-            <div className="text-[9px] text-zinc-500 mt-1 text-center leading-tight">
-                {description}
-            </div>
+            <div className="w-14 h-20 mb-1.5">{getBodyShape()}</div>
+            <div className="text-sm font-semibold text-zinc-200">{label}</div>
+            <div className={`text-[10px] ${isSelected ? 'text-blue-400' : 'text-zinc-500'}`}>{category}</div>
+            <div className="text-[9px] text-zinc-600 mt-0.5 text-center leading-tight">{description}</div>
         </button>
     );
 };
 
-// Default avatar options
 const DEFAULT_AVATARS = [
-    { id: 1, src: '/avatars/avatar1.jpg', name: 'Baek Yoon-Ho' },
-    { id: 2, src: '/avatars/avatar2.jpg', name: 'Sung Jin-Woo' },
-    { id: 3, src: '/avatars/avatar3.jpg', name: 'Shadow Monarch' },
-    { id: 4, src: '/avatars/avatar4.jpg', name: 'Cha Hae-In' },
-    { id: 5, src: '/avatars/avatar5.jpg', name: 'Igris' },
-    { id: 6, src: '/avatars/avatar6.jpg', name: 'Choi Jong-In' },
+    { id: 1, src: '/avatars/avatar1.jpg', name: 'Avatar 1' },
+    { id: 2, src: '/avatars/avatar2.jpg', name: 'Avatar 2' },
+    { id: 3, src: '/avatars/avatar3.jpg', name: 'Avatar 3' },
+    { id: 4, src: '/avatars/avatar4.jpg', name: 'Avatar 4' },
+    { id: 5, src: '/avatars/avatar5.jpg', name: 'Avatar 5' },
+    { id: 6, src: '/avatars/avatar6.jpg', name: 'Avatar 6' },
 ];
 
 export default function Register() {
@@ -229,7 +159,11 @@ export default function Register() {
         const result = await register(payload);
 
         if (result.success) {
-            navigate('/');
+            if (result.needsVerification) {
+                navigate('/verify-email');
+            } else {
+                navigate('/dashboard');
+            }
         }
         setLoading(false);
     };
@@ -265,29 +199,25 @@ export default function Register() {
             ? { essential: 15, athletic: 20, fitness: 25, average: 30 }
             : { essential: 10, athletic: 14, fitness: 19, average: 24 };
 
-        if (bf <= ranges.essential) return { name: 'Essential', color: 'text-cyan-400', bg: 'bg-cyan-500/20', border: 'border-cyan-500/30' };
-        if (bf <= ranges.athletic) return { name: 'Athletic', color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/30' };
-        if (bf <= ranges.fitness) return { name: 'Fitness', color: 'text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/30' };
-        if (bf <= ranges.average) return { name: 'Average', color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/30' };
-        return { name: 'Above Average', color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/30' };
+        if (bf <= ranges.essential) return { name: 'Essential', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' };
+        if (bf <= ranges.athletic) return { name: 'Athletic', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' };
+        if (bf <= ranges.fitness) return { name: 'Fitness', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' };
+        if (bf <= ranges.average) return { name: 'Average', color: 'text-zinc-400', bg: 'bg-zinc-500/10', border: 'border-zinc-500/20' };
+        return { name: 'Above Average', color: 'text-zinc-400', bg: 'bg-zinc-500/10', border: 'border-zinc-500/20' };
     };
 
     const category = getCategoryInfo();
 
     return (
-        <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Background */}
-            <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-purple-600/10 blur-[120px] rounded-full pointer-events-none" />
-
-            <div className="w-full max-w-2xl z-10">
+        <div className="min-h-screen bg-[var(--bg-root)] text-white flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl">
                 {/* Header */}
-                <div className="mb-6 text-center">
-                    <h1 className="text-3xl md:text-4xl font-black italic tracking-tighter mb-2 bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">
-                        CREATE ACCOUNT
+                <div className="mb-8 text-center">
+                    <h1 className="text-2xl font-semibold tracking-tight mb-2">
+                        Create your account
                     </h1>
                     <p className="text-zinc-500 text-sm">
-                        Step {step} of 2: {step === 1 ? 'Account Info' : 'Body Profile'}
+                        Step {step} of 2 — {step === 1 ? 'Account details' : 'Body profile'}
                     </p>
 
                     {/* Progress Indicator */}
@@ -300,7 +230,7 @@ export default function Register() {
                 <form onSubmit={handleSubmit}>
                     {step === 1 ? (
                         /* Step 1: Account Info */
-                        <div className="max-w-md mx-auto bg-zinc-900/50 backdrop-blur-md border border-white/10 p-8 rounded-3xl shadow-2xl">
+                        <div className="max-w-md mx-auto bg-[var(--bg-surface)] border border-white/[0.06] p-6 rounded-2xl">
                             {error && (
                                 <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm">
                                     {error}
@@ -310,7 +240,7 @@ export default function Register() {
                             <Input
                                 label="Username"
                                 name="username"
-                                placeholder="Your player name"
+                                placeholder="Your username"
                                 value={formData.username}
                                 onChange={handleChange}
                                 error={errors.username}
@@ -320,7 +250,7 @@ export default function Register() {
                                 label="Email"
                                 type="email"
                                 name="email"
-                                placeholder="player@example.com"
+                                placeholder="you@example.com"
                                 value={formData.email}
                                 onChange={handleChange}
                                 error={errors.email}
@@ -350,21 +280,21 @@ export default function Register() {
                             <Button
                                 type="button"
                                 onClick={handleNext}
-                                className="w-full mt-4 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white border-0"
+                                className="w-full mt-4"
                             >
-                                Continue <ChevronRight size={18} />
+                                Continue <ChevronRight size={16} />
                             </Button>
 
                             <p className="text-center text-sm text-zinc-500 mt-6">
-                                Already a Player?{' '}
-                                <Link to="/login" className="text-blue-400 hover:text-blue-300">
-                                    Login
+                                Already have an account?{' '}
+                                <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium">
+                                    Sign in
                                 </Link>
                             </p>
                         </div>
                     ) : (
-                        /* Step 2: Body Profile with Visual Body Fat Selector */
-                        <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 p-6 rounded-3xl shadow-2xl">
+                        /* Step 2: Body Profile */
+                        <div className="bg-[var(--bg-surface)] border border-white/[0.06] p-6 rounded-2xl">
                             {error && (
                                 <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm">
                                     {error}
@@ -373,8 +303,8 @@ export default function Register() {
 
                             {/* Avatar Selection */}
                             <div className="mb-6">
-                                <label className="text-sm uppercase tracking-wider text-zinc-400 font-medium mb-3 block">
-                                    Choose Your Avatar
+                                <label className="text-xs text-zinc-400 font-medium mb-3 block">
+                                    Profile picture (optional)
                                 </label>
                                 <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
                                     {DEFAULT_AVATARS.map((avatar) => (
@@ -382,9 +312,9 @@ export default function Register() {
                                             key={avatar.id}
                                             type="button"
                                             onClick={() => setFormData(prev => ({ ...prev, profilePicture: avatar.src }))}
-                                            className={`relative group rounded-2xl overflow-hidden border-2 transition-all duration-300 aspect-square ${formData.profilePicture === avatar.src
-                                                    ? 'border-blue-500 ring-2 ring-blue-500/40 scale-105 shadow-lg shadow-blue-500/20'
-                                                    : 'border-zinc-700 hover:border-zinc-500 hover:scale-102'
+                                            className={`relative group rounded-xl overflow-hidden border-2 transition-all duration-200 aspect-square ${formData.profilePicture === avatar.src
+                                                    ? 'border-blue-500 ring-1 ring-blue-500/30'
+                                                    : 'border-zinc-800 hover:border-zinc-600'
                                                 }`}
                                         >
                                             <img
@@ -392,32 +322,22 @@ export default function Register() {
                                                 alt={avatar.name}
                                                 className="w-full h-full object-cover"
                                             />
-                                            {/* Dark overlay on hover */}
-                                            <div className={`absolute inset-0 transition-opacity ${formData.profilePicture === avatar.src
-                                                    ? 'bg-blue-500/20'
-                                                    : 'bg-black/0 group-hover:bg-black/30'
-                                                }`} />
-                                            {/* Checkmark */}
                                             {formData.profilePicture === avatar.src && (
-                                                <div className="absolute top-1 right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-md">
-                                                    <Check size={14} className="text-white" />
+                                                <div className="absolute top-1 right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                                    <Check size={12} className="text-white" />
                                                 </div>
                                             )}
-                                            {/* Name tooltip */}
-                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <p className="text-[9px] text-white text-center truncate">{avatar.name}</p>
-                                            </div>
                                         </button>
                                     ))}
                                 </div>
-                                <p className="text-xs text-zinc-500 text-center mt-2">Select a profile avatar (optional)</p>
+
                             </div>
 
                             {/* Basic Info Row */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                 <div>
-                                    <label className="text-xs uppercase tracking-wider text-zinc-500 mb-1 flex items-center gap-1">
-                                        <Ruler size={12} /> Height (cm)
+                                    <label className="text-xs text-zinc-400 mb-1 block font-medium">
+                                        Height (cm)
                                     </label>
                                     <input
                                         type="number"
@@ -426,12 +346,12 @@ export default function Register() {
                                         onChange={handleChange}
                                         min="100"
                                         max="250"
-                                        className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50"
+                                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/40"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs uppercase tracking-wider text-zinc-500 mb-1 flex items-center gap-1">
-                                        <Scale size={12} /> Weight (kg)
+                                    <label className="text-xs text-zinc-400 mb-1 block font-medium">
+                                        Weight (kg)
                                     </label>
                                     <input
                                         type="number"
@@ -440,11 +360,11 @@ export default function Register() {
                                         onChange={handleChange}
                                         min="30"
                                         max="300"
-                                        className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50"
+                                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/40"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Age</label>
+                                    <label className="block text-xs text-zinc-400 mb-1 font-medium">Age</label>
                                     <input
                                         type="number"
                                         name="age"
@@ -452,18 +372,18 @@ export default function Register() {
                                         onChange={handleChange}
                                         min="13"
                                         max="100"
-                                        className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50"
+                                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/40"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs uppercase tracking-wider text-zinc-500 mb-1 flex items-center gap-1">
-                                        <User size={12} /> Gender
+                                    <label className="text-xs text-zinc-400 mb-1 block font-medium">
+                                        Gender
                                     </label>
                                     <select
                                         name="gender"
                                         value={formData.gender}
                                         onChange={handleChange}
-                                        className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50"
+                                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/40"
                                     >
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
@@ -475,8 +395,8 @@ export default function Register() {
                             {/* Body Fat Visual Selector */}
                             <div className="mb-6">
                                 <div className="flex items-center justify-between mb-4">
-                                    <label className="text-sm uppercase tracking-wider text-zinc-400 font-medium">
-                                        Select Your Body Fat Percentage
+                                    <label className="text-xs text-zinc-400 font-medium">
+                                        Body fat estimate
                                     </label>
                                     <span className={`text-sm px-3 py-1 rounded-full ${category.bg} ${category.color} ${category.border} border font-medium`}>
                                         {category.name} • {formData.bodyFat}%
@@ -499,15 +419,15 @@ export default function Register() {
                                     ))}
                                 </div>
 
-                                <p className="text-xs text-zinc-500 text-center mt-3">
-                                    Select the body type that best matches your current physique
+                                <p className="text-xs text-zinc-600 text-center mt-3">
+                                    Choose the body type closest to your current physique
                                 </p>
                             </div>
 
                             {/* Fitness Goal */}
                             <div className="mb-6">
-                                <label className="text-xs uppercase tracking-wider text-zinc-500 mb-2 flex items-center gap-1">
-                                    <Target size={12} /> Fitness Goal
+                                <label className="text-xs text-zinc-400 mb-2 block font-medium">
+                                    Fitness goal
                                 </label>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                     {[
@@ -521,8 +441,8 @@ export default function Register() {
                                             type="button"
                                             onClick={() => setFormData(prev => ({ ...prev, goal: goal.value }))}
                                             className={`p-3 rounded-xl border text-center transition-all ${formData.goal === goal.value
-                                                ? 'border-blue-500 bg-blue-500/20 text-white'
-                                                : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-600'
+                                                ? 'border-blue-500/40 bg-blue-500/8 text-white'
+                                                : 'border-white/[0.06] bg-[var(--bg-surface)] text-zinc-400 hover:border-white/[0.12]'
                                                 }`}
                                         >
                                             <div className="text-sm font-medium">{goal.label}</div>
@@ -545,16 +465,16 @@ export default function Register() {
                                 <Button
                                     type="submit"
                                     disabled={loading}
-                                    className="flex-1 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white border-0"
+                                    className="flex-1"
                                 >
-                                    {loading ? 'Creating...' : 'Start Journey'} <ChevronRight size={18} />
+                                    {loading ? 'Creating account...' : 'Create account'}
                                 </Button>
                             </div>
 
                             <p className="text-center text-sm text-zinc-500 mt-4">
-                                Already a Player?{' '}
-                                <Link to="/login" className="text-blue-400 hover:text-blue-300">
-                                    Login
+                                Already have an account?{' '}
+                                <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium">
+                                    Sign in
                                 </Link>
                             </p>
                         </div>

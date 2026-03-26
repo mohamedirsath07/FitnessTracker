@@ -111,26 +111,27 @@ ProgressSchema.pre('save', function (next) {
  * 
  * Either finds today's entry or creates a new one
  */
-ProgressSchema.statics.getOrCreateToday = async function (userId) {
+ProgressSchema.statics.getOrCreateToday = async function (userId, session = null) {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
     let progress = await this.findOne({
         userId,
         date: { $gte: startOfDay }
-    });
+    }).session(session);
 
     if (!progress) {
         // Get user's current stats for the snapshot
         const User = mongoose.model('User');
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).session(session);
 
-        progress = await this.create({
+        progress = new this({
             userId,
             date: new Date(),
             weight: user?.weight || 70,
             bodyFat: user?.bodyFat || 20
         });
+        await progress.save({ session });
     }
 
     return progress;

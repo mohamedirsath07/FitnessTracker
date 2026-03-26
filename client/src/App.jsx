@@ -16,7 +16,7 @@
  * We create a ProtectedRoute component that redirects to login if not auth'd.
  */
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataCacheProvider } from './context/DataCacheContext';
@@ -24,13 +24,18 @@ import { LoadingScreen } from './components/ui';
 import ErrorBoundary from './components/ErrorBoundary';
 import InstallPWA from './components/InstallPWA';
 
-// Direct imports for instant navigation
+// Auth pages — small, loaded eagerly for fast first paint
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Workout from './pages/Workout';
-import Nutrition from './pages/Nutrition';
-import Profile from './pages/Profile';
+
+// Heavy pages — lazy loaded (code-split) to reduce initial bundle
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Workout = React.lazy(() => import('./pages/Workout'));
+const Nutrition = React.lazy(() => import('./pages/Nutrition'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const Quests = React.lazy(() => import('./pages/Quests'));
+const GuildPage = React.lazy(() => import('./pages/Guild'));
+const BodyAnalysis = React.lazy(() => import('./pages/BodyAnalysis'));
 
 /**
  * ProtectedRoute Component
@@ -49,7 +54,7 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
 }
 
 /**
@@ -127,6 +132,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quests"
+        element={
+          <ProtectedRoute>
+            <Quests />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/guild"
+        element={
+          <ProtectedRoute>
+            <GuildPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/body"
+        element={
+          <ProtectedRoute>
+            <BodyAnalysis />
           </ProtectedRoute>
         }
       />

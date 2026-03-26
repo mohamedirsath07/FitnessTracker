@@ -152,18 +152,38 @@ export default function Workout() {
         <div className="min-h-screen bg-[#050505] text-white pb-28">
             {/* Header */}
             <header className="px-6 py-6 max-w-5xl mx-auto border-b border-white/5">
-                <h1 className="text-2xl font-bold">Daily Quests</h1>
-                <p className="text-zinc-500 text-sm mt-1">Complete workouts to earn XP and maintain your streak</p>
+                <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-bold tracking-tight">Workouts</h1>
+                    <span className="text-xs bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
+                        Available
+                    </span>
+                </div>
             </header>
 
             <main className="max-w-xl mx-auto px-4 md:px-6 pt-6 space-y-6 animate-fade-in">
 
+                {/* Quests Done & Total XP Stats */}
+                {!showForm && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-zinc-900/50 p-4 rounded-2xl border border-white/5 text-center">
+                            <div className="text-2xl font-bold mb-1">{recentWorkouts.length}</div>
+                            <div className="text-xs text-zinc-500">Completed</div>
+                        </div>
+                        <div className="bg-zinc-900/50 p-4 rounded-2xl border border-white/5 text-center">
+                            <div className="text-2xl font-bold mb-1">
+                                {user?.xp >= 1000 ? `${(user.xp / 1000).toFixed(1)}k` : user?.xp || 0}
+                            </div>
+                            <div className="text-xs text-zinc-500">Total pts</div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Workout Form Modal */}
                 {showForm && selectedType && (
-                    <Card className="border-blue-500/30 bg-gradient-to-br from-blue-950/20 to-purple-950/10">
+                    <Card className="border-white/[0.06]">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="text-4xl h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-white/10">
-                                {selectedType.icon || '🏅'}
+                            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center border border-white/10">
+                                <Zap size={24} className="text-blue-400" />
                             </div>
                             <div>
                                 <h3 className="text-xl font-bold">{selectedType.label}</h3>
@@ -181,7 +201,7 @@ export default function Workout() {
                             {selectedType.inputType === 'time' ? (
                                 /* Time-based input */
                                 <div>
-                                    <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2">
+                                    <label className="block text-xs text-zinc-500 mb-2">
                                         Duration: {duration} minutes
                                     </label>
                                     <input
@@ -219,7 +239,7 @@ export default function Workout() {
                                 /* Count-based input */
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2">
+                                        <label className="block text-xs text-zinc-500 mb-2">
                                             Reps per set: {reps}
                                         </label>
                                         <input
@@ -249,7 +269,7 @@ export default function Workout() {
                                     </div>
                                     
                                     <div>
-                                        <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2">
+                                        <label className="block text-xs text-zinc-500 mb-2">
                                             Number of sets: {sets}
                                         </label>
                                         <div className="flex gap-2">
@@ -278,7 +298,7 @@ export default function Workout() {
 
                             {/* Intensity selector */}
                             <div>
-                                <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2">
+                                <label className="block text-xs text-zinc-500 mb-2">
                                     Intensity
                                 </label>
                                 <div className="flex gap-2">
@@ -308,7 +328,7 @@ export default function Workout() {
                                     <span className="text-zinc-400 flex items-center gap-2">
                                         <Flame size={14} className="text-orange-400" /> Calories
                                     </span>
-                                    <span className="text-orange-400 font-mono font-bold">
+                                    <span className="text-orange-400 font-semibold">
                                         ~{calculateEstimatedCalories()} kcal
                                     </span>
                                 </div>
@@ -316,7 +336,7 @@ export default function Workout() {
                                     <span className="text-zinc-400 flex items-center gap-2">
                                         <Zap size={14} className="text-blue-400" /> XP Reward
                                     </span>
-                                    <span className="text-blue-400 font-mono font-bold">
+                                    <span className="text-blue-400 font-semibold">
                                         ~{Math.max(5, Math.round(calculateEstimatedCalories() / 2))} XP
                                     </span>
                                 </div>
@@ -338,9 +358,9 @@ export default function Workout() {
                                     variant="system"
                                     onClick={handleSubmitWorkout}
                                     disabled={submitting}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white"
+                                    className="flex-1 bg-blue-600 hover:bg-blue-500 text-white"
                                 >
-                                    {submitting ? 'Logging...' : '✓ Complete Quest'}
+                                    {submitting ? 'Logging...' : 'Complete Workout'}
                                 </Button>
                             </div>
                         </div>
@@ -378,49 +398,43 @@ export default function Workout() {
 
                         {/* Workout list */}
                         <div className="space-y-3">
-                            {(activeTab === 'time' ? timeBasedWorkouts : countBasedWorkouts).map((type) => (
-                                <button
-                                    key={type.type}
-                                    onClick={() => handleSelectWorkout(type)}
-                                    className="w-full bg-zinc-900/60 hover:bg-zinc-800 backdrop-blur border border-white/5 hover:border-blue-500/30 p-5 rounded-2xl flex items-center justify-between group transition-all duration-300"
-                                >
-                                    <div className="flex items-center gap-5">
-                                        <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform border border-white/5">
-                                            {type.icon || '🏅'}
-                                        </div>
-                                        <div className="text-left">
-                                            <div className="font-semibold text-lg">
-                                                {type.label}
+                            {(activeTab === 'time' ? timeBasedWorkouts : countBasedWorkouts).map((type) => {
+                                const estimatedXP = type.inputType === 'time' 
+                                    ? Math.max(5, Math.round(type.caloriesPer30Min / 2))
+                                    : Math.max(5, Math.round((type.caloriesPer10Reps || 30) / 2));
+                                return (
+                                    <button
+                                        key={type.type}
+                                        onClick={() => handleSelectWorkout(type)}
+                                        className="w-full bg-zinc-900/60 hover:bg-zinc-800 backdrop-blur border border-white/5 hover:border-blue-500/30 p-5 rounded-2xl flex items-center justify-between group transition-all duration-300"
+                                    >
+                                        <div className="flex items-center gap-5">
+                                            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform border border-white/5">
+                                                <Zap size={24} />
                                             </div>
-                                            <div className="text-xs text-zinc-500 mt-1 flex items-center gap-2">
-                                                <Flame size={10} className="text-orange-400" />
-                                                {type.inputType === 'time' 
-                                                    ? `~${type.caloriesPer30Min} kcal / 30 min`
-                                                    : `~${type.caloriesPer10Reps} kcal / 10 reps`
-                                                }
+                                            <div className="text-left">
+                                                <div className="font-semibold text-lg">
+                                                    {type.label}
+                                                </div>
+                                                <div className="text-xs text-zinc-500 mt-1 flex items-center gap-2">
+                                                    <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                                                    ~{estimatedXP * 2} pts
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="h-8 w-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                                        <ChevronRight size={16} />
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Info card */}
-                        <div className="text-center py-4 text-zinc-500 text-sm">
-                            {activeTab === 'time' 
-                                ? '⏱️ Log workouts by duration (minutes)'
-                                : '💪 Log workouts by reps and sets'
-                            }
+                                        <div className="h-8 w-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                                            <ChevronRight size={16} />
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </>
                 )}
 
                 {/* Streak Bonus Card */}
-                <div className="mt-4 p-6 rounded-3xl bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/10 text-center">
-                    <Trophy className="mx-auto text-yellow-500 mb-2" size={32} />
+                <div className="mt-4 p-6 rounded-2xl bg-zinc-900/30 border border-white/[0.06] text-center">
+                    <Trophy className="mx-auto text-zinc-400 mb-2" size={28} />
                     <h3 className="font-bold text-lg">
                         {user?.streak > 0 ? 'Streak Bonus Active' : 'Start Your Streak'}
                     </h3>
@@ -434,17 +448,17 @@ export default function Workout() {
                 {/* Recent Workouts */}
                 {recentWorkouts.length > 0 && (
                     <div className="mt-6">
-                        <h3 className="text-xs text-zinc-500 uppercase tracking-wider mb-4">Recent Activity</h3>
+                    <h3 className="text-xs text-zinc-500 mb-4">Recent activity</h3>
                         <div className="space-y-2">
                             {recentWorkouts.map(workout => (
                                 <div
                                     key={workout.id || workout._id}
-                                    className="flex items-center justify-between p-4 bg-zinc-900/40 rounded-xl border border-white/5"
+                                    className="flex items-center justify-between p-4 bg-zinc-900/40 rounded-xl border border-white/[0.06]"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xl">
-                                            {workoutTypes.find(t => t.type === workout.type)?.icon || '🏅'}
-                                        </span>
+                                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-600/20 to-purple-700/20 flex items-center justify-center border border-indigo-500/15">
+                                            <Zap size={16} className="text-indigo-400" fill="currentColor" />
+                                        </div>
                                         <div>
                                             <div className="font-medium">
                                                 {workoutTypes.find(t => t.type === workout.type)?.label || workout.type}
@@ -458,8 +472,8 @@ export default function Workout() {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-orange-400 text-sm font-mono">{workout.caloriesBurned} kcal</div>
-                                        <div className="text-blue-400 text-xs">+{workout.xpEarned} XP</div>
+                                        <div className="text-orange-400 text-sm">{workout.caloriesBurned} kcal</div>
+                                        <div className="text-blue-400 text-xs">+{workout.xpEarned} pts</div>
                                     </div>
                                 </div>
                             ))}

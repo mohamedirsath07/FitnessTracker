@@ -44,8 +44,8 @@ export default defineConfig({
         categories: ['health', 'fitness', 'lifestyle'],
       },
       workbox: {
-        // Don't precache 3D model files (too large)
-        globIgnores: ['**/models/**', '**/*.glb', '**/*.gltf'],
+        // Ignore large static assets from precaching
+        globIgnores: ['**/models/**'],
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         runtimeCaching: [
           {
@@ -61,22 +61,6 @@ export default defineConfig({
               cacheableResponse: {
                 statuses: [0, 200],
               },
-            },
-          },
-          {
-            // Cache 3D model files (long-lived, large)
-            urlPattern: /\.(?:glb|gltf)$/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'model-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-              rangeRequests: true,
             },
           },
           {
@@ -125,9 +109,11 @@ export default defineConfig({
       output: {
         manualChunks: {
           // Split heavy libraries into separate chunks for better caching
-          'three': ['three', '@react-three/fiber', '@react-three/drei'],
           'charts': ['recharts'],
           'vendor': ['react', 'react-dom', 'react-router-dom', 'axios'],
+          'three-core': ['three'],
+          'three-fiber': ['@react-three/fiber', '@react-three/drei'],
+          'three-post': ['@react-three/postprocessing', 'postprocessing'],
         }
       }
     }

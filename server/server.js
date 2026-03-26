@@ -45,6 +45,11 @@ const userRoutes = require('./routes/users');
 const workoutRoutes = require('./routes/workouts');
 const mealRoutes = require('./routes/meals');
 const progressRoutes = require('./routes/progress');
+const questRoutes = require('./routes/quests');
+// v1: Frozen — guild, admin, payments routes disabled for launch focus
+// const guildRoutes = require('./routes/guilds');
+// const adminRoutes = require('./routes/admin');
+// const paymentRoutes = require('./routes/payments');
 
 /**
  * Connect to MongoDB
@@ -214,6 +219,11 @@ app.use('/api/users', userRoutes);      // /api/users/profile, /api/users/stats
 app.use('/api/workouts', workoutRoutes);// /api/workouts, /api/workouts/:id
 app.use('/api/meals', mealRoutes);      // /api/meals, /api/meals/today
 app.use('/api/progress', progressRoutes);// /api/progress, /api/progress/weight
+app.use('/api/quests', questRoutes);     // /api/quests
+// v1: Frozen — guild, admin, payments routes disabled for launch focus
+// app.use('/api/guilds', guildRoutes);     // /api/guilds
+// app.use('/api/admin', adminRoutes);      // /api/admin/dashboard
+// app.use('/api/payments', paymentRoutes); // /api/payments/subscribe
 
 /**
  * ============================================

@@ -16,10 +16,13 @@
 
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 const Meal = require('../models/Meal');
+const User = require('../models/User');
 const Progress = require('../models/Progress');
 const { protect } = require('../middleware/auth');
+const { refreshQuests, updateQuestProgress } = require('../services/questService');
 
 // All meal routes require authentication
 router.use(protect);
@@ -103,31 +106,58 @@ router.post(
 
             const { name, mealType, calories, protein, carbs, fats, fiber } = req.body;
 
-            // Create meal
-            const meal = await Meal.create({
-                userId: req.user.id,
-                name,
-                mealType: mealType || 'snack',
-                calories,
-                protein: protein || 0,
-                carbs: carbs || 0,
-                fats: fats || 0,
-                fiber: fiber || 0
-            });
+            // === Atomic transaction: meal + progress + quests ===
+            const session = await mongoose.startSession();
+            try {
+                let responseData;
+                await session.withTransaction(async () => {
+                    // Create meal
+                    const meal = new Meal({
+                        userId: req.user.id,
+                        name,
+                        mealType: mealType || 'snack',
+                        calories,
+                        protein: protein || 0,
+                        carbs: carbs || 0,
+                        fats: fats || 0,
+                        fiber: fiber || 0
+                    });
+                    await meal.save({ session });
 
-            // Update daily progress
-            const progress = await Progress.getOrCreateToday(req.user.id);
-            progress.caloriesConsumed += calories;
-            progress.proteinIntake += protein || 0;
-            progress.carbsIntake += carbs || 0;
-            progress.fatsIntake += fats || 0;
-            await progress.save();
+                    // Update daily progress
+                    const progress = await Progress.getOrCreateToday(req.user.id, session);
+                    progress.caloriesConsumed += calories;
+                    progress.proteinIntake += protein || 0;
+                    progress.carbsIntake += carbs || 0;
+                    progress.fatsIntake += fats || 0;
+                    await progress.save({ session });
 
-            res.status(201).json({
-                success: true,
-                message: 'Meal logged successfully!',
-                meal
-            });
+                    // Update quest progress and analytics
+                    let questsCompleted = [];
+                    const user = await User.findById(req.user.id).session(session);
+                    if (user) {
+                        // Update analytics
+                        if (!user.analytics) user.analytics = {};
+                        user.analytics.totalMealsLogged = (user.analytics.totalMealsLogged || 0) + 1;
+                        await user.save({ session });
+
+                        // Update nutrition quests
+                        await refreshQuests(user, session);
+                        questsCompleted = await updateQuestProgress(user, 'nutrition', 1, session);
+                    }
+
+                    responseData = {
+                        success: true,
+                        message: 'Meal logged successfully!',
+                        meal,
+                        questsCompleted,
+                    };
+                });
+
+                res.status(201).json(responseData);
+            } finally {
+                session.endSession();
+            }
 
         } catch (error) {
             console.error('Create meal error:', error);
@@ -208,182 +238,6 @@ router.get('/weekly', async (req, res) => {
             message: 'Server error fetching weekly data'
         });
     }
-});
-
-/**
- * @route   GET /api/meals/search
- * @desc    Search for foods using Open Food Facts API
- * @access  Private
- * 
- * This uses the free Open Food Facts API (no API key required)
- * Alternative: USDA FoodData Central API
- */
-router.get('/search', async (req, res) => {
-    try {
-        const { query } = req.query;
-        
-        if (!query || query.length < 2) {
-            return res.status(400).json({
-                success: false,
-                message: 'Search query must be at least 2 characters'
-            });
-        }
-
-        // Use Open Food Facts API with timeout for reliability
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-
-        let foods = [];
-        
-        try {
-            const response = await fetch(
-                `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20`,
-                { signal: controller.signal }
-            );
-            clearTimeout(timeout);
-            
-            const data = await response.json();
-
-            // Transform the response to our format
-            foods = (data.products || [])
-                .filter(p => p.product_name && p.nutriments)
-                .slice(0, 15)
-                .map(product => {
-                    const n = product.nutriments;
-                    return {
-                        id: product._id || product.code,
-                        name: product.product_name,
-                        brand: product.brands || '',
-                        image: product.image_small_url || product.image_url,
-                        servingSize: product.serving_quantity || 100,
-                        servingUnit: product.serving_quantity ? 'serving' : 'grams',
-                        nutritionPer100g: {
-                            calories: Math.round(n['energy-kcal_100g'] || n.energy_100g / 4.184 || 0),
-                            protein: Math.round((n.proteins_100g || 0) * 10) / 10,
-                            carbs: Math.round((n.carbohydrates_100g || 0) * 10) / 10,
-                            fats: Math.round((n.fat_100g || 0) * 10) / 10,
-                            fiber: Math.round((n.fiber_100g || 0) * 10) / 10,
-                            sugar: Math.round((n.sugars_100g || 0) * 10) / 10,
-                            sodium: Math.round(n.sodium_100g || 0)
-                        },
-                        suggestedUnit: getSuggestedUnit(product.product_name, product.categories_tags)
-                    };
-                });
-        } catch (fetchError) {
-            clearTimeout(timeout);
-            console.warn('Food API unavailable, falling back to common foods:', fetchError.message);
-            
-            // Fallback: filter common foods by search query
-            const queryLower = query.toLowerCase();
-            foods = COMMON_FOODS
-                .filter(f => f.name.toLowerCase().includes(queryLower))
-                .map((food, index) => ({
-                    id: `common_${index}`,
-                    name: food.name,
-                    brand: 'Common Foods',
-                    image: null,
-                    servingSize: food.servingSize,
-                    servingUnit: food.unit,
-                    nutritionPer100g: {
-                        calories: food.unit === 'grams' ? food.calories : Math.round(food.calories * (100 / (food.servingSize || 1))),
-                        protein: food.protein,
-                        carbs: food.carbs,
-                        fats: food.fats,
-                        fiber: food.fiber,
-                        sugar: 0,
-                        sodium: 0,
-                    },
-                    suggestedUnit: food.unit,
-                }));
-        }
-
-        res.json({
-            success: true,
-            count: foods.length,
-            foods
-        });
-
-    } catch (error) {
-        console.error('Food search error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error searching for foods'
-        });
-    }
-});
-
-/**
- * Helper function to suggest appropriate unit for food
- */
-function getSuggestedUnit(name, categories) {
-    const nameLower = (name || '').toLowerCase();
-    const cats = (categories || []).join(' ').toLowerCase();
-    
-    // Piece-based foods
-    if (/egg|banana|apple|orange|cookie|biscuit|bread|slice|piece|bar|muffin|donut|samosa|paratha|roti|chapati|idli|dosa|vada/i.test(nameLower)) {
-        return 'pieces';
-    }
-    
-    // Liquid foods
-    if (/milk|juice|water|soda|cola|drink|beverage|tea|coffee|smoothie|shake|lassi|buttermilk/i.test(nameLower) || /beverages/i.test(cats)) {
-        return 'ml';
-    }
-    
-    // Cup-based
-    if (/rice|dal|curry|soup|cereal|oatmeal|porridge|khichdi|biryani/i.test(nameLower)) {
-        return 'cups';
-    }
-    
-    // Default to grams
-    return 'grams';
-}
-
-/**
- * Common Indian foods database (fallback when API doesn't have results)
- */
-const COMMON_FOODS = [
-    { name: 'Chapati/Roti', calories: 71, protein: 2.7, carbs: 15, fats: 0.4, fiber: 2, unit: 'pieces', servingSize: 1 },
-    { name: 'White Rice (cooked)', calories: 130, protein: 2.7, carbs: 28, fats: 0.3, fiber: 0.4, unit: 'cups', servingSize: 1 },
-    { name: 'Dal (Lentils)', calories: 116, protein: 9, carbs: 20, fats: 0.4, fiber: 8, unit: 'cups', servingSize: 1 },
-    { name: 'Paneer', calories: 265, protein: 18, carbs: 1.2, fats: 21, fiber: 0, unit: 'grams', servingSize: 100 },
-    { name: 'Chicken Breast', calories: 165, protein: 31, carbs: 0, fats: 3.6, fiber: 0, unit: 'grams', servingSize: 100 },
-    { name: 'Egg (Boiled)', calories: 78, protein: 6, carbs: 0.6, fats: 5, fiber: 0, unit: 'pieces', servingSize: 1 },
-    { name: 'Banana', calories: 89, protein: 1.1, carbs: 23, fats: 0.3, fiber: 2.6, unit: 'pieces', servingSize: 1 },
-    { name: 'Apple', calories: 52, protein: 0.3, carbs: 14, fats: 0.2, fiber: 2.4, unit: 'pieces', servingSize: 1 },
-    { name: 'Milk (Full Fat)', calories: 61, protein: 3.2, carbs: 4.8, fats: 3.3, fiber: 0, unit: 'ml', servingSize: 100 },
-    { name: 'Yogurt/Curd', calories: 59, protein: 3.5, carbs: 3.6, fats: 3.3, fiber: 0, unit: 'cups', servingSize: 1 },
-    { name: 'Idli', calories: 39, protein: 2, carbs: 8, fats: 0.1, fiber: 0.5, unit: 'pieces', servingSize: 1 },
-    { name: 'Dosa', calories: 168, protein: 4, carbs: 29, fats: 4, fiber: 1, unit: 'pieces', servingSize: 1 },
-    { name: 'Samosa', calories: 262, protein: 4, carbs: 28, fats: 15, fiber: 2, unit: 'pieces', servingSize: 1 },
-    { name: 'Biryani', calories: 250, protein: 8, carbs: 35, fats: 9, fiber: 1, unit: 'cups', servingSize: 1 },
-    { name: 'Paratha', calories: 260, protein: 5, carbs: 32, fats: 13, fiber: 2, unit: 'pieces', servingSize: 1 },
-    { name: 'Poha', calories: 180, protein: 4, carbs: 32, fats: 5, fiber: 2, unit: 'cups', servingSize: 1 },
-    { name: 'Upma', calories: 165, protein: 4, carbs: 28, fats: 5, fiber: 2, unit: 'cups', servingSize: 1 },
-    { name: 'Oats', calories: 68, protein: 2.4, carbs: 12, fats: 1.4, fiber: 1.7, unit: 'cups', servingSize: 1 },
-    { name: 'Almonds', calories: 579, protein: 21, carbs: 22, fats: 50, fiber: 12, unit: 'grams', servingSize: 100 },
-    { name: 'Peanuts', calories: 567, protein: 26, carbs: 16, fats: 49, fiber: 9, unit: 'grams', servingSize: 100 },
-];
-
-/**
- * @route   GET /api/meals/common
- * @desc    Get common foods list (for quick add)
- * @access  Private
- */
-router.get('/common', async (req, res) => {
-    res.json({
-        success: true,
-        foods: COMMON_FOODS.map((food, index) => ({
-            id: `common_${index}`,
-            ...food,
-            nutritionPer100g: food.unit === 'grams' ? {
-                calories: food.calories,
-                protein: food.protein,
-                carbs: food.carbs,
-                fats: food.fats,
-                fiber: food.fiber
-            } : null
-        }))
-    });
 });
 
 /**

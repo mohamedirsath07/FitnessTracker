@@ -1,202 +1,147 @@
 /**
  * ============================================
- * NUTRITION PAGE - Healthify-style Food Tracking
+ * NUTRITION PAGE — Quick-Add Grid + Custom Entry
  * ============================================
- * 
- * Features:
- * - Food search with nutrition API
- * - Quantity input (grams, pieces, cups, etc.)
- * - Auto-calculate calories, protein, carbs, fats, fiber
- * - Common foods quick-add
- * - Daily nutrition summary
+ *
+ * v1: Simplified nutrition tracking.
+ * Exists to feed Goals/streak logic, not to be a calorie-counting app.
+ *
+ * - Quick-add grid (35 common foods, one-tap logging)
+ * - Custom meal form (name + calories + optional macros)
+ * - Today's log with delete
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2, Utensils, Flame, Beef, Wheat, Droplet, Leaf, X, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Utensils, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDataCache } from '../context/DataCacheContext';
 import { mealAPI } from '../services/api';
-import { Card, Button, Input, Toast } from '../components/ui';
+import { Card, Button, Toast } from '../components/ui';
 import NavBar from '../components/NavBar';
 
-// Debounce hook for search
-function useDebounce(value, delay) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-    useEffect(() => {
-        const handler = setTimeout(() => setDebouncedValue(value), delay);
-        return () => clearTimeout(handler);
-    }, [value, delay]);
-    return debouncedValue;
+/* ── Quick-add food database ─────────────────────────── */
+const QUICK_FOODS = [
+    { emoji: '🍞', name: 'Chapati / Roti', cal: 71, p: 2.7, c: 15, f: 0.4 },
+    { emoji: '🍚', name: 'Rice (1 cup)', cal: 206, p: 4.3, c: 45, f: 0.4 },
+    { emoji: '🫘', name: 'Dal (1 cup)', cal: 116, p: 9, c: 20, f: 0.4 },
+    { emoji: '🧀', name: 'Paneer (100g)', cal: 265, p: 18, c: 1.2, f: 21 },
+    { emoji: '🍗', name: 'Chicken Breast (100g)', cal: 165, p: 31, c: 0, f: 3.6 },
+    { emoji: '🥚', name: 'Egg (Boiled)', cal: 78, p: 6, c: 0.6, f: 5 },
+    { emoji: '🍌', name: 'Banana', cal: 89, p: 1.1, c: 23, f: 0.3 },
+    { emoji: '🍎', name: 'Apple', cal: 52, p: 0.3, c: 14, f: 0.2 },
+    { emoji: '🥛', name: 'Milk (1 cup)', cal: 146, p: 8, c: 12, f: 8 },
+    { emoji: '🥣', name: 'Yogurt / Curd (1 cup)', cal: 59, p: 3.5, c: 3.6, f: 3.3 },
+    { emoji: '🫓', name: 'Dosa', cal: 168, p: 4, c: 29, f: 4 },
+    { emoji: '🥟', name: 'Idli (1 pc)', cal: 39, p: 2, c: 8, f: 0.1 },
+    { emoji: '🥟', name: 'Samosa', cal: 262, p: 4, c: 28, f: 15 },
+    { emoji: '🍛', name: 'Biryani (1 cup)', cal: 250, p: 8, c: 35, f: 9 },
+    { emoji: '🫓', name: 'Paratha', cal: 260, p: 5, c: 32, f: 13 },
+    { emoji: '🍲', name: 'Poha (1 cup)', cal: 180, p: 4, c: 32, f: 5 },
+    { emoji: '🥣', name: 'Upma (1 cup)', cal: 165, p: 4, c: 28, f: 5 },
+    { emoji: '🥣', name: 'Oats (1 cup)', cal: 154, p: 5, c: 27, f: 2.6 },
+    { emoji: '🥜', name: 'Almonds (30g)', cal: 174, p: 6, c: 6.5, f: 15 },
+    { emoji: '🥜', name: 'Peanuts (30g)', cal: 170, p: 7.8, c: 5, f: 15 },
+    { emoji: '🐟', name: 'Fish Curry (1 cup)', cal: 200, p: 22, c: 6, f: 10 },
+    { emoji: '🍖', name: 'Mutton Curry (1 cup)', cal: 295, p: 25, c: 8, f: 18 },
+    { emoji: '🥗', name: 'Salad (1 bowl)', cal: 45, p: 2, c: 8, f: 0.5 },
+    { emoji: '🥪', name: 'Sandwich', cal: 250, p: 10, c: 30, f: 10 },
+    { emoji: '🍕', name: 'Pizza Slice', cal: 285, p: 12, c: 36, f: 10 },
+    { emoji: '🍔', name: 'Burger', cal: 354, p: 17, c: 29, f: 19 },
+    { emoji: '🍟', name: 'French Fries (med)', cal: 365, p: 4, c: 48, f: 17 },
+    { emoji: '☕', name: 'Tea / Coffee', cal: 30, p: 1, c: 4, f: 0.5 },
+    { emoji: '🥤', name: 'Protein Shake', cal: 150, p: 25, c: 8, f: 3 },
+    { emoji: '🍫', name: 'Chocolate Bar', cal: 230, p: 3, c: 26, f: 13 },
+    { emoji: '🍪', name: 'Biscuits (4 pcs)', cal: 180, p: 2, c: 24, f: 8 },
+    { emoji: '🫙', name: 'Peanut Butter (2 tbsp)', cal: 188, p: 8, c: 6, f: 16 },
+    { emoji: '🍳', name: 'Egg Omelette (2 eggs)', cal: 188, p: 13, c: 1, f: 14 },
+    { emoji: '🌯', name: 'Wrap / Roll', cal: 300, p: 12, c: 35, f: 12 },
+    { emoji: '🧃', name: 'Juice (1 glass)', cal: 110, p: 0.5, c: 26, f: 0.3 },
+];
+
+/* ── Meal-type auto-detect based on current hour ─────── */
+function defaultMealType() {
+    const h = new Date().getHours();
+    if (h < 11) return 'breakfast';
+    if (h < 15) return 'lunch';
+    if (h < 19) return 'dinner';
+    return 'snack';
 }
 
 export default function Nutrition() {
     const { user } = useAuth();
     const { getCached, fetchNutrition, invalidate } = useDataCache();
     const cached = getCached('nutrition');
+
     const [meals, setMeals] = useState(cached?.meals || []);
     const [summary, setSummary] = useState(cached?.summary || null);
     const [loading, setLoading] = useState(!cached);
     const [notification, setNotification] = useState(null);
-
-    // Search state
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [commonFoods, setCommonFoods] = useState([]);
-    const [searching, setSearching] = useState(false);
-    const [activeTab, setActiveTab] = useState('search'); // 'search' or 'common'
-
-    // Selected food state
-    const [selectedFood, setSelectedFood] = useState(null);
-    const [quantity, setQuantity] = useState(1);
-    const [unit, setUnit] = useState('serving');
-    const [mealType, setMealType] = useState('snack');
     const [submitting, setSubmitting] = useState(false);
 
-    const debouncedSearch = useDebounce(searchQuery, 500);
+    /* Meal-type tab state — user picks once, all quick-adds use it */
+    const [quickMealType, setQuickMealType] = useState(defaultMealType);
 
-    // Fetch meals — cached data renders instantly
+    /* Custom form state */
+    const [showCustom, setShowCustom] = useState(false);
+    const [custom, setCustom] = useState({ name: '', calories: '', protein: '', carbs: '', fat: '', mealType: defaultMealType() });
+
     useEffect(() => {
         fetchNutrition().then(data => {
-            if (data) {
-                setMeals(data.meals);
-                setSummary(data.summary);
-                setCommonFoods(data.commonFoods);
-            }
+            if (data) { setMeals(data.meals); setSummary(data.summary); }
             setLoading(false);
         });
     }, []);
 
-    // Search foods when query changes
     useEffect(() => {
-        const searchFoods = async () => {
-            if (debouncedSearch.length < 2) {
-                setSearchResults([]);
-                return;
-            }
-
-            setSearching(true);
-            try {
-                const response = await mealAPI.search(debouncedSearch);
-                setSearchResults(response.data.foods || []);
-            } catch (error) {
-                console.error('Search failed:', error);
-                setSearchResults([]);
-                // Show user-friendly message on search failure
-                if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-                    setNotification({ type: 'warning', message: 'Search timed out. Try again or use Common Foods.' });
-                } else if (!error.response) {
-                    setNotification({ type: 'warning', message: 'Network error. Check your connection.' });
-                }
-            } finally {
-                setSearching(false);
-            }
-        };
-
-        searchFoods();
-    }, [debouncedSearch]);
-
-    // Calculate nutrition based on quantity
-    const calculateNutrition = useCallback(() => {
-        if (!selectedFood) return { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 };
-
-        let multiplier = quantity;
-
-        // If it's a common food with fixed serving
-        if (selectedFood.id?.startsWith('common_')) {
-            if (selectedFood.unit === 'grams') {
-                multiplier = quantity / 100; // Per 100g
-            }
-            return {
-                calories: Math.round(selectedFood.calories * multiplier),
-                protein: Math.round(selectedFood.protein * multiplier * 10) / 10,
-                carbs: Math.round(selectedFood.carbs * multiplier * 10) / 10,
-                fats: Math.round(selectedFood.fats * multiplier * 10) / 10,
-                fiber: Math.round((selectedFood.fiber || 0) * multiplier * 10) / 10
-            };
+        if (notification) {
+            const t = setTimeout(() => setNotification(null), 3000);
+            return () => clearTimeout(t);
         }
+    }, [notification]);
 
-        // For API foods, calculate based on per 100g values
-        const n = selectedFood.nutritionPer100g;
-        if (!n) return { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 };
+    /* ── Handlers ──────────────────────────────────────── */
 
-        if (unit === 'grams') {
-            multiplier = quantity / 100;
-        } else if (unit === 'ml') {
-            multiplier = quantity / 100;
-        } else if (unit === 'cups') {
-            multiplier = (quantity * 240) / 100; // 1 cup ≈ 240g
-        } else if (unit === 'pieces') {
-            multiplier = quantity * (selectedFood.servingSize || 50) / 100;
-        } else if (unit === 'serving') {
-            multiplier = quantity * (selectedFood.servingSize || 100) / 100;
-        } else if (unit === 'tbsp') {
-            multiplier = (quantity * 15) / 100;
-        }
-
-        return {
-            calories: Math.round(n.calories * multiplier),
-            protein: Math.round(n.protein * multiplier * 10) / 10,
-            carbs: Math.round(n.carbs * multiplier * 10) / 10,
-            fats: Math.round(n.fats * multiplier * 10) / 10,
-            fiber: Math.round((n.fiber || 0) * multiplier * 10) / 10
-        };
-    }, [selectedFood, quantity, unit]);
-
-    const handleSelectFood = (food) => {
-        setSelectedFood(food);
-        setQuantity(1);
-        // Set default unit based on food
-        setUnit(food.suggestedUnit || food.unit || 'serving');
-    };
-
-    const handleSubmit = async () => {
-        if (!selectedFood) return;
-
+    const logMeal = async (name, calories, protein, carbs, fat, mealType) => {
+        if (submitting) return;
         setSubmitting(true);
-        const nutrition = calculateNutrition();
-
         try {
-            const response = await mealAPI.create({
-                name: selectedFood.name + (selectedFood.brand ? ` (${selectedFood.brand})` : ''),
-                mealType,
-                quantity,
-                unit,
-                calories: nutrition.calories,
-                protein: nutrition.protein,
-                carbs: nutrition.carbs,
-                fats: nutrition.fats,
-                fiber: nutrition.fiber,
-                externalId: selectedFood.id
+            const res = await mealAPI.create({
+                name,
+                calories: Math.round(calories),
+                protein: Math.round(protein || 0),
+                carbs: Math.round(carbs || 0),
+                fats: Math.round(fat || 0),
+                mealType: mealType || defaultMealType(),
             });
-
-            setMeals(prev => [response.data.meal, ...prev]);
+            setMeals(prev => [res.data.meal, ...prev]);
             setSummary(prev => ({
                 ...prev,
-                totalCalories: (prev?.totalCalories || 0) + nutrition.calories,
-                totalProtein: (prev?.totalProtein || 0) + nutrition.protein,
-                totalCarbs: (prev?.totalCarbs || 0) + nutrition.carbs,
-                totalFats: (prev?.totalFats || 0) + nutrition.fats,
-                totalFiber: (prev?.totalFiber || 0) + nutrition.fiber
+                totalCalories: (prev?.totalCalories || 0) + Math.round(calories),
+                totalProtein: (prev?.totalProtein || 0) + Math.round(protein || 0),
+                totalCarbs: (prev?.totalCarbs || 0) + Math.round(carbs || 0),
+                totalFats: (prev?.totalFats || 0) + Math.round(fat || 0),
             }));
-
-            setNotification({ type: 'success', message: `${selectedFood.name} logged! +${nutrition.calories} kcal` });
-
-            // Mark caches stale
             invalidate('nutrition');
             invalidate('dashboard');
-
-            // Reset
-            setShowAddModal(false);
-            setSelectedFood(null);
-            setSearchQuery('');
-            setSearchResults([]);
-
-        } catch (error) {
+            setNotification({ type: 'success', message: `${name} logged! +${Math.round(calories)} kcal` });
+        } catch {
             setNotification({ type: 'error', message: 'Failed to log meal' });
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handleQuickAdd = (food) => {
+        logMeal(food.name, food.cal, food.p, food.c, food.f, quickMealType);
+    };
+
+    const handleCustomSubmit = (e) => {
+        e.preventDefault();
+        const cal = parseInt(custom.calories, 10);
+        if (!custom.name.trim() || !cal || cal <= 0) return;
+        logMeal(custom.name.trim(), cal, +custom.protein || 0, +custom.carbs || 0, +custom.fat || 0, custom.mealType);
+        setCustom({ name: '', calories: '', protein: '', carbs: '', fat: '', mealType: defaultMealType() });
+        setShowCustom(false);
     };
 
     const handleDelete = async (mealId) => {
@@ -212,395 +157,207 @@ export default function Nutrition() {
                     totalCalories: Math.max(0, (prev?.totalCalories || 0) - meal.calories),
                     totalProtein: Math.max(0, (prev?.totalProtein || 0) - meal.protein),
                     totalCarbs: Math.max(0, (prev?.totalCarbs || 0) - meal.carbs),
-                    totalFats: Math.max(0, (prev?.totalFats || 0) - meal.fats)
+                    totalFats: Math.max(0, (prev?.totalFats || 0) - meal.fats),
                 }));
             }
-        } catch (error) {
-            console.error('Delete failed:', error);
+        } catch {
+            setNotification({ type: 'error', message: 'Failed to delete meal' });
         }
     };
 
-    useEffect(() => {
-        if (notification) {
-            const timer = setTimeout(() => setNotification(null), 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [notification]);
-
+    /* ── Derived ───────────────────────────────────────── */
     const calorieGoal = user?.dailyCalorieGoal || 2000;
-    const caloriesConsumed = summary?.totalCalories || 0;
-    const calorieProgress = Math.min((caloriesConsumed / calorieGoal) * 100, 100);
-    const nutrition = selectedFood ? calculateNutrition() : null;
+    const consumed = summary?.totalCalories || 0;
+    const remaining = calorieGoal - consumed;
 
     if (loading) {
         return (
             <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
             </div>
         );
     }
 
+    /* ── Render ─────────────────────────────────────────── */
     return (
         <div className="min-h-screen bg-[#050505] text-white pb-28">
+            {/* Header */}
             <header className="px-6 py-6 max-w-5xl mx-auto border-b border-white/5">
                 <h1 className="text-2xl font-bold">Nutrition</h1>
-                <p className="text-zinc-500 text-sm mt-1">Track your meals and macros</p>
+                <p className="text-zinc-500 text-sm mt-1">Quick log your meals</p>
             </header>
 
             <main className="max-w-xl mx-auto px-4 pt-6 space-y-6">
-                {/* Daily Summary Card */}
-                <Card className="border-green-500/20 bg-gradient-to-br from-green-950/20 to-emerald-950/10">
-                    <div className="flex justify-between items-start mb-4">
+                {/* ── Calorie summary bar ──────────────── */}
+                <Card className="border-white/[0.06]">
+                    <div className="flex justify-between items-center mb-3">
                         <div>
-                            <div className="text-4xl font-bold font-mono">{caloriesConsumed}</div>
-                            <div className="text-xs text-zinc-400">of {calorieGoal} kcal goal</div>
+                            <span className="text-3xl font-bold">{consumed}</span>
+                            <span className="text-zinc-500 text-sm ml-1">/ {calorieGoal} kcal</span>
                         </div>
-                        <div className={`text-sm px-4 py-2 rounded-full font-medium ${caloriesConsumed > calorieGoal
-                                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                : 'bg-green-500/20 text-green-400 border border-green-500/30'
-                            }`}>
-                            {calorieGoal - caloriesConsumed > 0
-                                ? `${calorieGoal - caloriesConsumed} remaining`
-                                : `${caloriesConsumed - calorieGoal} over`
-                            }
-                        </div>
+                        <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${
+                            remaining > 0
+                                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                        }`}>
+                            {remaining > 0 ? `${remaining} left` : `${Math.abs(remaining)} over`}
+                        </span>
                     </div>
-
-                    {/* Progress bar */}
-                    <div className="h-3 bg-zinc-800 rounded-full overflow-hidden mb-6">
+                    <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                         <div
-                            className={`h-full transition-all duration-500 ${caloriesConsumed > calorieGoal ? 'bg-red-500' : 'bg-gradient-to-r from-green-500 to-emerald-400'
-                                }`}
-                            style={{ width: `${calorieProgress}%` }}
+                            className={`h-full transition-all duration-500 ${consumed > calorieGoal ? 'bg-red-500' : 'bg-blue-500'}`}
+                            style={{ width: `${Math.min((consumed / calorieGoal) * 100, 100)}%` }}
                         />
                     </div>
-
-                    {/* Macros Grid */}
-                    <div className="grid grid-cols-4 gap-3">
-                        <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-                            <Beef size={18} className="mx-auto mb-1 text-purple-400" />
-                            <div className="text-lg font-bold text-purple-400">{summary?.totalProtein || 0}g</div>
-                            <div className="text-[10px] text-zinc-500 uppercase">Protein</div>
+                    {/* Macro row */}
+                    <div className="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+                        <div className="bg-zinc-800/50 rounded-lg p-2">
+                            <div className="text-purple-400 font-bold text-sm">{summary?.totalProtein || 0}g</div>
+                            <div className="text-zinc-500">Protein</div>
                         </div>
-                        <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-                            <Wheat size={18} className="mx-auto mb-1 text-amber-400" />
-                            <div className="text-lg font-bold text-amber-400">{summary?.totalCarbs || 0}g</div>
-                            <div className="text-[10px] text-zinc-500 uppercase">Carbs</div>
+                        <div className="bg-zinc-800/50 rounded-lg p-2">
+                            <div className="text-amber-400 font-bold text-sm">{summary?.totalCarbs || 0}g</div>
+                            <div className="text-zinc-500">Carbs</div>
                         </div>
-                        <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-                            <Droplet size={18} className="mx-auto mb-1 text-yellow-400" />
-                            <div className="text-lg font-bold text-yellow-400">{summary?.totalFats || 0}g</div>
-                            <div className="text-[10px] text-zinc-500 uppercase">Fats</div>
-                        </div>
-                        <div className="bg-zinc-800/50 rounded-xl p-3 text-center">
-                            <Leaf size={18} className="mx-auto mb-1 text-green-400" />
-                            <div className="text-lg font-bold text-green-400">{summary?.totalFiber || 0}g</div>
-                            <div className="text-[10px] text-zinc-500 uppercase">Fiber</div>
+                        <div className="bg-zinc-800/50 rounded-lg p-2">
+                            <div className="text-yellow-400 font-bold text-sm">{summary?.totalFats || 0}g</div>
+                            <div className="text-zinc-500">Fat</div>
                         </div>
                     </div>
                 </Card>
 
-                {/* Add Food Button */}
-                <Button
-                    variant="system"
-                    onClick={() => setShowAddModal(true)}
-                    className="w-full bg-gradient-to-r from-purple-600 to-violet-500 hover:from-purple-500 hover:to-violet-400 border-0 text-white"
-                >
-                    <Plus size={20} /> Log Food
-                </Button>
+                {/* ── Quick-add grid ───────────────────── */}
+                <section>
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xs text-zinc-500">Quick add</h3>
+                        {/* Meal-type strip — set once, all quick-adds use it */}
+                        <div className="flex gap-1">
+                            {['breakfast', 'lunch', 'dinner', 'snack'].map(type => (
+                                <button
+                                    key={type}
+                                    onClick={() => setQuickMealType(type)}
+                                    className={`text-[10px] font-medium px-2 py-1 rounded-lg capitalize transition-all ${
+                                        quickMealType === type
+                                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                            : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                                    }`}
+                                >
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {QUICK_FOODS.map((food, i) => (
+                            <button
+                                key={i}
+                                onClick={() => handleQuickAdd(food)}
+                                disabled={submitting}
+                                className="flex items-center gap-2.5 p-3 bg-zinc-900/60 border border-white/5 rounded-xl text-left hover:border-blue-500/30 hover:bg-zinc-800/60 transition-all active:scale-[0.97] disabled:opacity-50"
+                            >
+                                <span className="text-lg flex-shrink-0">{food.emoji}</span>
+                                <div className="min-w-0">
+                                    <div className="text-sm font-medium truncate">{food.name}</div>
+                                    <div className="text-[11px] text-zinc-500">{food.cal} kcal</div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </section>
 
-                {/* Today's Meals */}
-                <div>
-                    <h3 className="text-xs text-zinc-500 uppercase tracking-wider mb-4">Today's Log</h3>
+                {/* ── Custom meal form ─────────────────── */}
+                <section>
+                    <button
+                        onClick={() => setShowCustom(!showCustom)}
+                        className="flex items-center justify-between w-full text-xs text-zinc-400 hover:text-zinc-300 transition-colors py-2"
+                    >
+                        <span className="flex items-center gap-1.5"><Plus size={14} /> Custom entry</span>
+                        {showCustom ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+
+                    {showCustom && (
+                        <form onSubmit={handleCustomSubmit} className="space-y-3 pb-2">
+                            <div className="grid grid-cols-2 gap-3">
+                                <input
+                                    type="text"
+                                    placeholder="Food name *"
+                                    value={custom.name}
+                                    onChange={e => setCustom(v => ({ ...v, name: e.target.value }))}
+                                    className="col-span-2 bg-zinc-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50"
+                                    required
+                                />
+                                <input
+                                    type="number"
+                                    placeholder="Calories *"
+                                    value={custom.calories}
+                                    onChange={e => setCustom(v => ({ ...v, calories: e.target.value }))}
+                                    className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50"
+                                    min="1"
+                                    required
+                                />
+                                <select
+                                    value={custom.mealType}
+                                    onChange={e => setCustom(v => ({ ...v, mealType: e.target.value }))}
+                                    className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                                >
+                                    <option value="breakfast">Breakfast</option>
+                                    <option value="lunch">Lunch</option>
+                                    <option value="dinner">Dinner</option>
+                                    <option value="snack">Snack</option>
+                                </select>
+                            </div>
+                            {/* Optional macros */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <input type="number" placeholder="Protein (g)" value={custom.protein} onChange={e => setCustom(v => ({ ...v, protein: e.target.value }))} min="0" className="bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50" />
+                                <input type="number" placeholder="Carbs (g)" value={custom.carbs} onChange={e => setCustom(v => ({ ...v, carbs: e.target.value }))} min="0" className="bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50" />
+                                <input type="number" placeholder="Fat (g)" value={custom.fat} onChange={e => setCustom(v => ({ ...v, fat: e.target.value }))} min="0" className="bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50" />
+                            </div>
+                            <Button type="submit" variant="system" disabled={submitting} className="w-full bg-blue-600 hover:bg-blue-500 border-0 text-white text-sm">
+                                {submitting ? 'Adding...' : 'Log Meal'}
+                            </Button>
+                        </form>
+                    )}
+                </section>
+
+                {/* ── Today's log ──────────────────────── */}
+                <section>
+                    <h3 className="text-xs text-zinc-500 mb-3">Today&apos;s log ({meals.length})</h3>
                     {meals.length === 0 ? (
-                        <div className="text-center py-16 text-zinc-500">
-                            <Utensils size={48} className="mx-auto mb-4 opacity-30" />
-                            <p className="text-lg">No meals logged today</p>
-                            <p className="text-sm mt-1">Tap "Log Food" to add your first meal</p>
+                        <div className="text-center py-12 text-zinc-600">
+                            <Utensils size={36} className="mx-auto mb-3 opacity-30" />
+                            <p>No meals logged today</p>
                         </div>
                     ) : (
-                        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                        <div className="space-y-2">
                             {meals.map(meal => (
                                 <div
                                     key={meal._id}
-                                    className="flex justify-between items-center p-4 bg-zinc-900/50 rounded-2xl border border-white/5 group hover:border-green-500/20 transition-all"
+                                    className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-xl border border-white/5 group hover:border-white/10 transition-all"
                                 >
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 flex-shrink-0">
-                                            <Utensils size={20} />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="font-medium truncate">{meal.name}</div>
-                                            <div className="text-xs text-zinc-500 flex items-center gap-2 mt-0.5">
-                                                <span className="capitalize">{meal.mealType}</span>
-                                                <span>•</span>
-                                                <span>{meal.quantity} {meal.unit}</span>
-                                            </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-sm font-medium truncate">{meal.name}</div>
+                                        <div className="text-[11px] text-zinc-500 flex gap-2 mt-0.5">
+                                            <span className="capitalize">{meal.mealType}</span>
+                                            {meal.protein > 0 && <span>P:{meal.protein}g</span>}
+                                            {meal.carbs > 0 && <span>C:{meal.carbs}g</span>}
+                                            {meal.fats > 0 && <span>F:{meal.fats}g</span>}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-right">
-                                            <div className="text-green-400 font-bold">{meal.calories} kcal</div>
-                                            <div className="text-[10px] text-zinc-500">
-                                                P:{meal.protein}g C:{meal.carbs}g F:{meal.fats}g
-                                            </div>
-                                        </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm font-medium text-zinc-300">{meal.calories} kcal</span>
                                         <button
                                             onClick={() => handleDelete(meal._id)}
-                                            className="opacity-0 group-hover:opacity-100 text-red-400 p-2 hover:bg-red-500/10 rounded-lg transition-all"
+                                            className="opacity-0 group-hover:opacity-100 text-red-400 p-1.5 hover:bg-red-500/10 rounded-lg transition-all"
                                         >
-                                            <Trash2 size={18} />
+                                            <Trash2 size={15} />
                                         </button>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
-                </div>
+                </section>
             </main>
-
-            {/* Add Food Modal */}
-            {showAddModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center">
-                    <div className="bg-zinc-900 w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl max-h-[80vh] sm:max-h-[90vh] mb-24 sm:mb-0 overflow-hidden border border-white/10 flex flex-col">
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-white/10">
-                            <h2 className="text-lg font-bold">
-                                {selectedFood ? 'Add Food' : 'Search Food'}
-                            </h2>
-                            <button
-                                onClick={() => {
-                                    setShowAddModal(false);
-                                    setSelectedFood(null);
-                                    setSearchQuery('');
-                                }}
-                                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="overflow-y-auto flex-1 min-h-0">
-                            {!selectedFood ? (
-                                /* Search View */
-                                <div className="p-4 space-y-4">
-                                    {/* Search Input */}
-                                    <div className="relative">
-                                        <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search for food..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-12 pr-4 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:border-green-500"
-                                            autoFocus
-                                        />
-                                        {searching && (
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                                                <div className="w-5 h-5 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Tabs */}
-                                    <div className="flex bg-zinc-800 rounded-lg p-1">
-                                        <button
-                                            onClick={() => setActiveTab('search')}
-                                            className={`flex-1 py-2 rounded-md text-sm transition-all ${activeTab === 'search' ? 'bg-green-500 text-white' : 'text-zinc-400'
-                                                }`}
-                                        >
-                                            Search Results
-                                        </button>
-                                        <button
-                                            onClick={() => setActiveTab('common')}
-                                            className={`flex-1 py-2 rounded-md text-sm transition-all ${activeTab === 'common' ? 'bg-green-500 text-white' : 'text-zinc-400'
-                                                }`}
-                                        >
-                                            Common Foods
-                                        </button>
-                                    </div>
-
-                                    {/* Results */}
-                                    <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-                                        {activeTab === 'search' ? (
-                                            searchResults.length > 0 ? (
-                                                searchResults.map(food => (
-                                                    <button
-                                                        key={food.id}
-                                                        onClick={() => handleSelectFood(food)}
-                                                        className="w-full flex items-center gap-3 p-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl text-left transition-all"
-                                                    >
-                                                        {food.image ? (
-                                                            <img src={food.image} alt="" className="w-12 h-12 rounded-lg object-cover bg-zinc-700" />
-                                                        ) : (
-                                                            <div className="w-12 h-12 rounded-lg bg-zinc-700 flex items-center justify-center">
-                                                                <Utensils size={20} className="text-zinc-500" />
-                                                            </div>
-                                                        )}
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="font-medium truncate">{food.name}</div>
-                                                            {food.brand && <div className="text-xs text-zinc-500">{food.brand}</div>}
-                                                            <div className="text-xs text-green-400 mt-0.5">
-                                                                {food.nutritionPer100g?.calories || 0} kcal / 100g
-                                                            </div>
-                                                        </div>
-                                                        <ChevronDown size={20} className="text-zinc-500 -rotate-90" />
-                                                    </button>
-                                                ))
-                                            ) : searchQuery.length >= 2 && !searching ? (
-                                                <div className="text-center py-8 text-zinc-500">
-                                                    <p>No results found</p>
-                                                    <p className="text-sm mt-1">Try a different search term or check common foods</p>
-                                                </div>
-                                            ) : (
-                                                <div className="text-center py-8 text-zinc-500">
-                                                    <Search size={32} className="mx-auto mb-2 opacity-30" />
-                                                    <p>Search for food to see results</p>
-                                                </div>
-                                            )
-                                        ) : (
-                                            commonFoods.map(food => (
-                                                <button
-                                                    key={food.id}
-                                                    onClick={() => handleSelectFood(food)}
-                                                    className="w-full flex items-center gap-3 p-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl text-left transition-all"
-                                                >
-                                                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center text-xl">
-                                                        🍽️
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <div className="font-medium">{food.name}</div>
-                                                        <div className="text-xs text-green-400">
-                                                            {food.calories} kcal / {food.unit === 'grams' ? '100g' : `1 ${food.unit.slice(0, -1)}`}
-                                                        </div>
-                                                    </div>
-                                                    <ChevronDown size={20} className="text-zinc-500 -rotate-90" />
-                                                </button>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            ) : (
-                                /* Food Detail View */
-                                <div className="p-4 space-y-5">
-                                    {/* Selected Food */}
-                                    <div className="flex items-center gap-4 p-4 bg-zinc-800/50 rounded-xl">
-                                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center text-2xl">
-                                            🍽️
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg">{selectedFood.name}</h3>
-                                            {selectedFood.brand && <p className="text-sm text-zinc-400">{selectedFood.brand}</p>}
-                                        </div>
-                                    </div>
-
-                                    {/* Quantity & Unit */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-xs text-zinc-500 uppercase mb-2">Quantity</label>
-                                            <input
-                                                type="number"
-                                                value={quantity}
-                                                onChange={(e) => setQuantity(Math.max(1, Math.round(parseFloat(e.target.value)) || 1))}
-                                                min="1"
-                                                step="1"
-                                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-lg font-mono focus:outline-none focus:border-green-500"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-zinc-500 uppercase mb-2">Unit</label>
-                                            <select
-                                                value={unit}
-                                                onChange={(e) => setUnit(e.target.value)}
-                                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500"
-                                            >
-                                                <option value="grams">Grams (g)</option>
-                                                <option value="pieces">Pieces</option>
-                                                <option value="cups">Cups</option>
-                                                <option value="ml">Milliliters (ml)</option>
-                                                <option value="tbsp">Tablespoons</option>
-                                                <option value="serving">Serving</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {/* Meal Type */}
-                                    <div>
-                                        <label className="block text-xs text-zinc-500 uppercase mb-2">Meal Type</label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {['breakfast', 'lunch', 'dinner', 'snack'].map(type => (
-                                                <button
-                                                    key={type}
-                                                    onClick={() => setMealType(type)}
-                                                    className={`py-2 rounded-xl text-sm capitalize transition-all ${mealType === type
-                                                            ? 'bg-green-500 text-white'
-                                                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                                                        }`}
-                                                >
-                                                    {type}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Nutrition Preview */}
-                                    {nutrition && (
-                                        <div className="bg-zinc-800/50 rounded-xl p-4 space-y-3">
-                                            <h4 className="text-xs text-zinc-500 uppercase">Nutrition</h4>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-zinc-400 flex items-center gap-2">
-                                                    <Flame size={16} className="text-orange-400" /> Calories
-                                                </span>
-                                                <span className="text-2xl font-bold text-orange-400">{nutrition.calories} kcal</span>
-                                            </div>
-                                            <div className="grid grid-cols-4 gap-2 pt-2 border-t border-zinc-700">
-                                                <div className="text-center">
-                                                    <div className="text-purple-400 font-bold">{nutrition.protein}g</div>
-                                                    <div className="text-[10px] text-zinc-500">Protein</div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="text-amber-400 font-bold">{nutrition.carbs}g</div>
-                                                    <div className="text-[10px] text-zinc-500">Carbs</div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="text-yellow-400 font-bold">{nutrition.fats}g</div>
-                                                    <div className="text-[10px] text-zinc-500">Fats</div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="text-green-400 font-bold">{nutrition.fiber}g</div>
-                                                    <div className="text-[10px] text-zinc-500">Fiber</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Sticky Actions Footer */}
-                        {selectedFood && (
-                            <div className="flex gap-3 p-4 border-t border-white/10 bg-zinc-900 shrink-0">
-                                <Button
-                                    variant="secondary"
-                                    onClick={() => setSelectedFood(null)}
-                                    className="flex-1"
-                                >
-                                    Back
-                                </Button>
-                                <Button
-                                    variant="system"
-                                    onClick={handleSubmit}
-                                    disabled={submitting || !nutrition?.calories}
-                                    className="flex-1 bg-gradient-to-r from-purple-600 to-violet-500 hover:from-purple-500 hover:to-violet-400 text-white"
-                                >
-                                    {submitting ? 'Adding...' : `Add ${nutrition?.calories || 0} kcal`}
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
 
             <NavBar />
             {notification && <Toast message={notification.message} type={notification.type} />}

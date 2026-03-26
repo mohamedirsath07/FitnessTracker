@@ -22,6 +22,27 @@ const User = require('../models/User');
 const Workout = require('../models/Workout');
 const Meal = require('../models/Meal');
 const { protect } = require('../middleware/auth');
+const { getRankInfo } = require('../services/xpService');
+
+/**
+ * @route   POST /api/users/push-subscribe
+ * @desc    Save push notification subscription
+ * @access  Private
+ */
+router.post('/push-subscribe', protect, async (req, res) => {
+    try {
+        const { endpoint, keys } = req.body;
+        if (!endpoint) return res.status(400).json({ message: 'Invalid subscription' });
+
+        await User.findByIdAndUpdate(req.user.id, {
+            pushSubscription: { endpoint, keys },
+        });
+
+        res.json({ success: true, message: 'Push subscription saved' });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to save subscription' });
+    }
+});
 
 /**
  * @route   PUT /api/users/profile
@@ -278,18 +299,22 @@ router.get('/leaderboard', protect, async (req, res) => {
         const topUsers = await User.find({})
             .select('username xp streak profilePicture')
             .sort({ xp: -1 })
-            .limit(10);
+            .limit(10)
+            .lean();
 
         res.json({
             success: true,
-            leaderboard: topUsers.map((user, index) => ({
-                rank: index + 1,
-                username: user.username,
-                xp: user.xp,
-                streak: user.streak,
-                level: user.getLevel(),
-                profilePicture: user.profilePicture || ''
-            }))
+            leaderboard: topUsers.map((user, index) => {
+                const rankInfo = getRankInfo(user.xp);
+                return {
+                    rank: index + 1,
+                    username: user.username,
+                    xp: user.xp,
+                    streak: user.streak,
+                    level: { rank: rankInfo.current.rank, color: rankInfo.current.color, progress: rankInfo.progress },
+                    profilePicture: user.profilePicture || '',
+                };
+            })
         });
 
     } catch (error) {

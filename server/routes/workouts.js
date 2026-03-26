@@ -19,11 +19,16 @@
 
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 const Workout = require('../models/Workout');
 const User = require('../models/User');
 const Progress = require('../models/Progress');
+const Guild = require('../models/Guild');
 const { protect } = require('../middleware/auth');
+const { calculateWorkoutXP, checkRankUp } = require('../services/xpService');
+const { updateStreak } = require('../services/streakService');
+const { refreshQuests, updateQuestProgress } = require('../services/questService');
 
 // All workout routes require authentication
 router.use(protect);
@@ -55,7 +60,8 @@ router.get('/', async (req, res) => {
         const workouts = await Workout.find(filter)
             .sort({ date: -1 })  // Newest first
             .skip((page - 1) * limit)
-            .limit(parseInt(limit));
+            .limit(parseInt(limit))
+            .lean();
 
         res.json({
             success: true,
@@ -126,77 +132,117 @@ router.post(
                 });
             }
 
-            // Create workout
-            const workout = await Workout.create({
-                userId: req.user.id,
-                type: type.toLowerCase(),
-                inputType,
-                duration: duration || 0,
-                reps: reps || 0,
-                sets: sets || 1,
-                intensity: intensity || 'moderate',
-                notes
-            });
+            // === Atomic transaction: workout + XP + streak + quests + progress ===
+            const session = await mongoose.startSession();
+            try {
+                let responseData;
+                await session.withTransaction(async () => {
+                    // Create workout
+                    const workout = new Workout({
+                        userId: req.user.id,
+                        type: type.toLowerCase(),
+                        inputType,
+                        duration: duration || 0,
+                        reps: reps || 0,
+                        sets: sets || 1,
+                        intensity: intensity || 'moderate',
+                        notes
+                    });
+                    await workout.save({ session });
 
-            // Update user XP and streak
-            const user = await User.findById(req.user.id);
+                    // Update user XP and streak using services
+                    const user = await User.findById(req.user.id).session(session);
 
-            // Calculate streak
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+                    // Check if this is user's first workout today
+                    const todayStart = new Date();
+                    todayStart.setHours(0, 0, 0, 0);
+                    const workoutsToday = await Workout.countDocuments({
+                        userId: req.user.id,
+                        date: { $gte: todayStart }
+                    }).session(session);
+                    const isFirstToday = workoutsToday <= 1;
 
-            if (user.lastWorkoutDate) {
-                const lastDate = new Date(user.lastWorkoutDate);
-                lastDate.setHours(0, 0, 0, 0);
+                    // Calculate XP with streak multiplier and first-of-day bonus
+                    const xpResult = calculateWorkoutXP(workout.caloriesBurned, user.streak, isFirstToday);
+                    const oldXP = user.xp;
+                    user.xp += xpResult.totalXP;
+                    workout.xpEarned = xpResult.totalXP;
 
-                const daysSince = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+                    // Update streak using streak service (grace period support)
+                    const streakResult = updateStreak(user);
 
-                if (daysSince === 1) {
-                    // Continue streak
-                    user.streak += 1;
-                } else if (daysSince > 1) {
-                    // Streak broken, restart
-                    user.streak = 1;
+                    // Check for rank up
+                    const rankUp = checkRankUp(oldXP, user.xp);
+
+                    // Update analytics counters
+                    if (!user.analytics) user.analytics = {};
+                    user.analytics.totalWorkouts = (user.analytics.totalWorkouts || 0) + 1;
+                    user.analytics.totalCaloriesBurned = (user.analytics.totalCaloriesBurned || 0) + workout.caloriesBurned;
+
+                    // Mark onboarding complete on first workout
+                    if (user.analytics.totalWorkouts === 1) {
+                        user.onboardingComplete = true;
+                    }
+
+                    user.lastWorkoutDate = new Date();
+                    await Promise.all([user.save({ session }), workout.save({ session })]);
+
+                    // Update quest progress
+                    await refreshQuests(user, session);
+                    const calorieQuests = await updateQuestProgress(user, 'workout', workout.caloriesBurned, session);
+                    const countQuests = await updateQuestProgress(user, 'workout_count', 1, session);
+                    const streakQuests = await updateQuestProgress(user, 'streak', user.streakData?.current || 0, session);
+                    const questsCompleted = [...calorieQuests, ...countQuests, ...streakQuests];
+
+                    // Update daily progress
+                    const progress = await Progress.getOrCreateToday(req.user.id, session);
+                    progress.caloriesBurned += workout.caloriesBurned;
+                    progress.xpEarned += workout.xpEarned;
+                    progress.workoutCount += 1;
+                    await progress.save({ session });
+
+                    responseData = {
+                        success: true,
+                        message: 'Workout logged successfully!',
+                        workout: {
+                            id: workout._id,
+                            type: workout.type,
+                            inputType: workout.inputType,
+                            duration: workout.duration,
+                            reps: workout.reps,
+                            sets: workout.sets,
+                            intensity: workout.intensity,
+                            caloriesBurned: workout.caloriesBurned,
+                            xpEarned: workout.xpEarned,
+                            date: workout.date
+                        },
+                        xp: xpResult,
+                        rankUp: rankUp || undefined,
+                        questsCompleted,
+                        user: {
+                            xp: user.xp,
+                            streak: user.streak,
+                            level: user.getLevel()
+                        }
+                    };
+                });
+
+                // Guild XP — outside transaction (frozen feature, non-fatal)
+                try {
+                    const guild = await Guild.findOne({ 'members.user': req.user.id });
+                    if (guild) {
+                        guild.totalXP += responseData.xp.totalXP;
+                        guild.weeklyXP += responseData.xp.totalXP;
+                        await guild.save();
+                    }
+                } catch (guildErr) {
+                    console.error('Guild XP update error (non-fatal):', guildErr.message);
                 }
-                // If daysSince === 0, same day, streak stays same
-            } else {
-                // First workout ever
-                user.streak = 1;
+
+                res.status(201).json(responseData);
+            } finally {
+                session.endSession();
             }
-
-            // Update user
-            user.xp += workout.xpEarned;
-            user.lastWorkoutDate = new Date();
-            await user.save();
-
-            // Update daily progress
-            const progress = await Progress.getOrCreateToday(req.user.id);
-            progress.caloriesBurned += workout.caloriesBurned;
-            progress.xpEarned += workout.xpEarned;
-            progress.workoutCount += 1;
-            await progress.save();
-
-            res.status(201).json({
-                success: true,
-                message: 'Workout logged successfully!',
-                workout: {
-                    id: workout._id,
-                    type: workout.type,
-                    inputType: workout.inputType,
-                    duration: workout.duration,
-                    reps: workout.reps,
-                    sets: workout.sets,
-                    intensity: workout.intensity,
-                    caloriesBurned: workout.caloriesBurned,
-                    xpEarned: workout.xpEarned,
-                    date: workout.date
-                },
-                user: {
-                    xp: user.xp,
-                    streak: user.streak,
-                    level: user.getLevel()
-                }
-            });
 
         } catch (error) {
             console.error('Create workout error:', error);

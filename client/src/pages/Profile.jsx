@@ -10,21 +10,21 @@
  * - XP and streak stats
  */
 
-import React, { useState, useEffect } from 'react';
-import { LogOut, Save, Target, TrendingUp, TrendingDown, Scale, Ruler, User, Flame, Zap, Camera, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { LogOut, Save, Target, TrendingUp, TrendingDown, Scale, Ruler, User, Flame, Zap, Camera, Check, Pencil, Upload, Trash2, X, Image } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
 import { Card, Button, Toast } from '../components/ui';
-import RankBadge, { calculateLevel } from '../components/RankBadge';
+import { calculateLevel } from '../components/RankBadge';
 import NavBar from '../components/NavBar';
 
 const DEFAULT_AVATARS = [
-    { id: 1, src: '/avatars/avatar1.jpg', name: 'Baek Yoon-Ho' },
-    { id: 2, src: '/avatars/avatar2.jpg', name: 'Sung Jin-Woo' },
-    { id: 3, src: '/avatars/avatar3.jpg', name: 'Shadow Monarch' },
-    { id: 4, src: '/avatars/avatar4.jpg', name: 'Cha Hae-In' },
-    { id: 5, src: '/avatars/avatar5.jpg', name: 'Igris' },
-    { id: 6, src: '/avatars/avatar6.jpg', name: 'Choi Jong-In' },
+    { id: 1, src: '/avatars/avatar1.jpg', name: 'Avatar 1' },
+    { id: 2, src: '/avatars/avatar2.jpg', name: 'Avatar 2' },
+    { id: 3, src: '/avatars/avatar3.jpg', name: 'Avatar 3' },
+    { id: 4, src: '/avatars/avatar4.jpg', name: 'Avatar 4' },
+    { id: 5, src: '/avatars/avatar5.jpg', name: 'Avatar 5' },
+    { id: 6, src: '/avatars/avatar6.jpg', name: 'Avatar 6' },
 ];
 
 export default function Profile() {
@@ -33,7 +33,8 @@ export default function Profile() {
     const [notification, setNotification] = useState(null);
     const [activeTab, setActiveTab] = useState('metrics'); // 'metrics' or 'goals'
     const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
-    const fileInputRef = React.useRef(null);
+    const [showPictureModal, setShowPictureModal] = useState(false);
+    const fileInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
         weight: user?.weight || 70,
@@ -77,32 +78,41 @@ export default function Profile() {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_SIZE = 200;
-                let width = img.width;
-                let height = img.height;
+                const MAX_SIZE = 150;
 
-                if (width > height) {
-                    if (width > MAX_SIZE) {
-                        height = Math.round((height * MAX_SIZE) / width);
-                        width = MAX_SIZE;
-                    }
-                } else {
-                    if (height > MAX_SIZE) {
-                        width = Math.round((width * MAX_SIZE) / height);
-                        height = MAX_SIZE;
-                    }
-                }
+                // Center crop to square for consistent avatars
+                const minDim = Math.min(img.width, img.height);
+                const sx = (img.width - minDim) / 2;
+                const sy = (img.height - minDim) / 2;
 
-                canvas.width = width;
-                canvas.height = height;
+                canvas.width = MAX_SIZE;
+                canvas.height = MAX_SIZE;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                const base64 = canvas.toDataURL('image/jpeg', 0.8);
+                ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, MAX_SIZE, MAX_SIZE);
+
+                // Use WebP for 30% smaller size, fallback to JPEG
+                const supportsWebP = canvas.toDataURL('image/webp').startsWith('data:image/webp');
+                const base64 = supportsWebP
+                    ? canvas.toDataURL('image/webp', 0.7)
+                    : canvas.toDataURL('image/jpeg', 0.7);
                 setProfilePicture(base64);
+                setShowPictureModal(false);
             };
             img.src = event.target.result;
         };
         reader.readAsDataURL(file);
+    };
+
+    // Handle selecting a default avatar
+    const handleSelectAvatar = (avatarSrc) => {
+        setProfilePicture(avatarSrc);
+        setShowPictureModal(false);
+    };
+
+    // Handle deleting profile picture
+    const handleDeletePicture = () => {
+        setProfilePicture('');
+        setShowPictureModal(false);
     };
 
     const handleSave = async () => {
@@ -163,19 +173,22 @@ export default function Profile() {
             <main className="max-w-xl mx-auto px-4 pt-8 space-y-6">
                 {/* Profile Header */}
                 <div className="text-center mb-8 relative">
-                    <div
-                        className="w-28 h-28 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 mx-auto mb-4 border-4 border-zinc-900 shadow-2xl relative z-10 flex items-center justify-center cursor-pointer group overflow-hidden"
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        {profilePicture ? (
-                            <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                            <User size={48} className="text-white/80" />
-                        )}
-                        {/* Camera overlay on hover */}
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Camera size={24} className="text-white" />
+                    <div className="relative inline-block">
+                        <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 border-4 border-zinc-900 shadow-2xl relative z-10 flex items-center justify-center overflow-hidden">
+                            {profilePicture ? (
+                                <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <User size={48} className="text-white/80" />
+                            )}
                         </div>
+                        {/* Edit Button */}
+                        <button
+                            onClick={() => setShowPictureModal(true)}
+                            className="absolute bottom-0 right-0 z-20 w-9 h-9 rounded-full bg-blue-600 border-2 border-zinc-900 flex items-center justify-center text-white hover:bg-blue-500 transition-colors shadow-lg"
+                            title="Edit profile picture"
+                        >
+                            <Pencil size={14} />
+                        </button>
                     </div>
                     <input
                         ref={fileInputRef}
@@ -184,23 +197,67 @@ export default function Profile() {
                         onChange={handlePictureChange}
                         className="hidden"
                     />
-                    {/* Default Avatar Picker - only show if no profile picture is saved */}
-                    {!user?.profilePicture && (
-                        <>
-                            {/* Default Avatar Picker - only show if no profile picture is saved */}
-                            {!user?.profilePicture && (
-                                <>
-                                    {/* Default Avatar Picker */}
-                                    <div className="flex items-center justify-center gap-2 mt-2 mb-3">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 bg-blue-500/10 blur-xl rounded-full z-0" />
+                    <h2 className="text-3xl font-bold mb-1 mt-4">{user?.username}</h2>
+                    <p className="text-zinc-400 text-xs bg-white/[0.04] inline-block px-3 py-1 rounded-full border border-white/[0.06]">
+                        Level {level.rank} · {(user?.xp || 0).toLocaleString()} pts
+                    </p>
+                </div>
+
+                {/* Profile Picture Edit Modal */}
+                {showPictureModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                        <div className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-white/[0.08] overflow-hidden shadow-2xl">
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+                                <h3 className="text-lg font-semibold text-white">Edit Profile Picture</h3>
+                                <button
+                                    onClick={() => setShowPictureModal(false)}
+                                    className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            {/* Modal Content */}
+                            <div className="p-5 space-y-5">
+                                {/* Action Buttons */}
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 hover:bg-blue-600/30 transition-colors"
+                                    >
+                                        <Upload size={20} />
+                                        <span className="font-medium">Upload from Device</span>
+                                    </button>
+
+                                    {profilePicture && (
+                                        <button
+                                            onClick={handleDeletePicture}
+                                            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-red-600/10 border border-red-500/20 text-red-400 hover:bg-red-600/20 transition-colors"
+                                        >
+                                            <Trash2 size={20} />
+                                            <span className="font-medium">Remove Picture</span>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Built-in Avatars */}
+                                <div>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Image size={14} className="text-zinc-500" />
+                                        <span className="text-xs text-zinc-500 font-medium tracking-wide">Or choose an avatar</span>
+                                    </div>
+                                    <div className="grid grid-cols-6 gap-2">
                                         {DEFAULT_AVATARS.map((avatar) => (
                                             <button
                                                 key={avatar.id}
-                                                type="button"
-                                                onClick={() => setProfilePicture(avatar.src)}
-                                                className={`relative w-10 h-10 rounded-full overflow-hidden border-2 transition-all ${profilePicture === avatar.src
-                                                    ? 'border-blue-500 ring-2 ring-blue-500/40 scale-110'
-                                                    : 'border-zinc-700 hover:border-zinc-400 hover:scale-105'
-                                                    }`}
+                                                onClick={() => handleSelectAvatar(avatar.src)}
+                                                className={`relative aspect-square rounded-full overflow-hidden border-2 transition-all ${
+                                                    profilePicture === avatar.src
+                                                        ? 'border-blue-500 ring-2 ring-blue-500/40 scale-105'
+                                                        : 'border-zinc-700 hover:border-zinc-500 hover:scale-105'
+                                                }`}
                                                 title={avatar.name}
                                             >
                                                 <img src={avatar.src} alt={avatar.name} className="w-full h-full object-cover" />
@@ -212,27 +269,26 @@ export default function Profile() {
                                             </button>
                                         ))}
                                     </div>
-                                    <p className="text-[10px] text-zinc-600 mb-2">Pick an avatar or click above to upload</p>
-                                </>
-                            )}
-                        </>
-                    )}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 bg-blue-500/20 blur-xl rounded-full z-0" />
-                    <h2 className="text-3xl font-bold mb-1">{user?.username}</h2>
-                    <p className="text-blue-400 text-xs tracking-[0.3em] uppercase bg-blue-500/10 inline-block px-3 py-1 rounded-full border border-blue-500/20">
-                        Rank {level.rank} Hunter
-                    </p>
-                </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                {/* Rank Card */}
-                <Card className="border-blue-500/20 bg-gradient-to-br from-blue-950/20 to-purple-950/10">
-                    <RankBadge xp={user?.xp || 0} />
+                {/* Stats Card */}
+                <Card className="border-white/[0.06]">
+                    <div className="flex items-center justify-center p-5">
+                        <div className="text-center">
+                            <div className="text-4xl font-bold text-white mb-1">{level.rank}</div>
+                            <div className="text-[10px] text-zinc-500">{level.label}</div>
+                        </div>
+                    </div>
                 </Card>
 
                 {/* Current vs Goal Stats */}
-                <Card className="border-green-500/20">
+                <Card className="border-white/[0.06]">
                     <h3 className="text-sm font-semibold text-zinc-400 mb-4 flex items-center gap-2">
-                        <Target size={16} className="text-green-400" />
+                        <Target size={16} className="text-blue-400" />
                         Body Metrics
                     </h3>
 
@@ -240,21 +296,21 @@ export default function Profile() {
                     <div className="grid grid-cols-2 gap-4 mb-6">
                         <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
                             <Ruler size={24} className="mx-auto mb-2 text-blue-400" />
-                            <div className="text-2xl font-bold font-mono">{formData.height}</div>
+                            <div className="text-2xl font-bold">{formData.height}</div>
                             <div className="text-xs text-zinc-500">Height (cm)</div>
                         </div>
                         <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
                             <Scale size={24} className="mx-auto mb-2 text-purple-400" />
-                            <div className="text-2xl font-bold font-mono">{formData.weight}</div>
+                            <div className="text-2xl font-bold">{formData.weight}</div>
                             <div className="text-xs text-zinc-500">Current Weight (kg)</div>
                         </div>
                     </div>
 
                     {/* Goal Weight Card */}
-                    <div className="bg-gradient-to-r from-green-900/20 to-emerald-900/20 rounded-xl p-4 border border-green-500/20">
+                    <div className="bg-zinc-800/30 rounded-xl p-4 border border-white/[0.06]">
                         <div className="flex items-center justify-between mb-3">
                             <span className="text-sm text-zinc-400">Goal Weight</span>
-                            <span className="text-xl font-bold text-green-400">{formData.goalWeight} kg</span>
+                            <span className="text-xl font-bold text-white">{formData.goalWeight} kg</span>
                         </div>
 
                         {/* Progress indicator */}
@@ -287,7 +343,7 @@ export default function Profile() {
                     <div className="mt-4 flex items-center justify-between p-3 bg-zinc-800/30 rounded-lg">
                         <span className="text-sm text-zinc-400">BMI</span>
                         <div className="text-right">
-                            <span className="font-bold font-mono">{bmi.toFixed(1)}</span>
+                            <span className="font-bold">{bmi.toFixed(1)}</span>
                             <span className={`ml-2 text-sm ${bmiCategory.color}`}>({bmiCategory.label})</span>
                         </div>
                     </div>
@@ -300,7 +356,7 @@ export default function Profile() {
                         <div>
                             <div className="flex justify-between mb-2">
                                 <span className="text-sm text-zinc-400">Height</span>
-                                <span className="text-lg font-mono font-bold">{formData.height} cm</span>
+                                <span className="text-lg font-bold">{formData.height} cm</span>
                             </div>
                             <input
                                 type="range"
@@ -316,7 +372,7 @@ export default function Profile() {
                         <div>
                             <div className="flex justify-between mb-2">
                                 <span className="text-sm text-zinc-400">Current Weight</span>
-                                <span className="text-lg font-mono font-bold">{formData.weight} kg</span>
+                                <span className="text-lg font-bold">{formData.weight} kg</span>
                             </div>
                             <input
                                 type="range"
@@ -334,7 +390,7 @@ export default function Profile() {
                                 <span className="text-sm text-zinc-400 flex items-center gap-2">
                                     <Target size={14} className="text-green-400" /> Goal Weight
                                 </span>
-                                <span className="text-lg font-mono font-bold text-green-400">{formData.goalWeight} kg</span>
+                                <span className="text-lg font-bold text-blue-400">{formData.goalWeight} kg</span>
                             </div>
                             <input
                                 type="range"
@@ -352,7 +408,7 @@ export default function Profile() {
                                 <span className="text-sm text-zinc-400 flex items-center gap-2">
                                     <User size={14} className="text-pink-400" /> Gender
                                 </span>
-                                <span className="text-lg font-mono font-bold capitalize">{formData.gender}</span>
+                                <span className="text-lg font-bold capitalize">{formData.gender}</span>
                             </div>
                             <div className="flex gap-2">
                                 {['male', 'female'].map((g) => (
@@ -377,7 +433,7 @@ export default function Profile() {
                         <div>
                             <div className="flex justify-between mb-2">
                                 <span className="text-sm text-zinc-400">Body Fat</span>
-                                <span className="text-lg font-mono font-bold">{formData.bodyFat}%</span>
+                                <span className="text-lg font-bold">{formData.bodyFat}%</span>
                             </div>
                             <input
                                 type="range"
@@ -402,7 +458,7 @@ export default function Profile() {
                                 type="number"
                                 value={formData.dailyCalorieGoal}
                                 onChange={(e) => setFormData({ ...formData, dailyCalorieGoal: e.target.value })}
-                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-3 text-white font-mono focus:outline-none focus:border-orange-500"
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-blue-500"
                             />
                             <span className="text-xs text-zinc-500 mt-1">kcal / day</span>
                         </div>
@@ -414,7 +470,7 @@ export default function Profile() {
                                 type="number"
                                 value={formData.dailyBurnGoal}
                                 onChange={(e) => setFormData({ ...formData, dailyBurnGoal: e.target.value })}
-                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-3 text-white font-mono focus:outline-none focus:border-blue-500"
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-blue-500"
                             />
                             <span className="text-xs text-zinc-500 mt-1">kcal / day</span>
                         </div>
@@ -425,7 +481,7 @@ export default function Profile() {
                     variant="system"
                     onClick={handleSave}
                     disabled={saving}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white"
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white"
                 >
                     <Save size={18} /> {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
@@ -433,12 +489,12 @@ export default function Profile() {
                 {/* Stats Summary */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-zinc-900/50 p-5 rounded-2xl border border-white/5 text-center">
-                        <div className="text-3xl font-bold text-orange-400">{user?.streak || 0}</div>
-                        <div className="text-xs text-zinc-500 mt-1">🔥 Day Streak</div>
+                        <div className="text-3xl font-bold text-zinc-200">{user?.streak || 0}</div>
+                        <div className="text-xs text-zinc-500 mt-1">Day streak</div>
                     </div>
                     <div className="bg-zinc-900/50 p-5 rounded-2xl border border-white/5 text-center">
-                        <div className="text-3xl font-bold text-blue-400">{(user?.xp || 0).toLocaleString()}</div>
-                        <div className="text-xs text-zinc-500 mt-1">Total XP ⚡</div>
+                        <div className="text-3xl font-bold text-zinc-200">{(user?.xp || 0).toLocaleString()}</div>
+                        <div className="text-xs text-zinc-500 mt-1">Total points</div>
                     </div>
                 </div>
 

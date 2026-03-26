@@ -140,6 +140,91 @@ const UserSchema = new mongoose.Schema({
         default: ''
     },
 
+    // Streak v2 — supports XP decay, grace periods, and freeze
+    streakData: {
+        current: { type: Number, default: 0 },
+        longest: { type: Number, default: 0 },
+        lastActiveDate: { type: Date },
+        graceUsedThisWeek: { type: Boolean, default: false },
+        freezesAvailable: { type: Number, default: 1 },
+        freezeWeekStart: { type: Date },
+    },
+
+    // Quest tracking (embedded — no extra collection needed)
+    activeQuests: [{
+        questId: String,
+        type: { type: String, enum: ['daily', 'weekly'] },
+        title: String,
+        description: String,
+        icon: String,
+        target: Number,
+        progress: { type: Number, default: 0 },
+        xpReward: Number,
+        completed: { type: Boolean, default: false },
+        completedAt: Date,
+        expiresAt: Date,
+    }],
+
+    // Lightweight analytics counters
+    analytics: {
+        totalWorkouts: { type: Number, default: 0 },
+        totalCaloriesBurned: { type: Number, default: 0 },
+        totalMealsLogged: { type: Number, default: 0 },
+        joinedAt: { type: Date, default: Date.now },
+        lastShareAt: Date,
+        shareCount: { type: Number, default: 0 },
+    },
+
+    // Web push notification subscription
+    pushSubscription: {
+        endpoint: String,
+        keys: {
+            p256dh: String,
+            auth: String,
+        },
+    },
+
+    // Subscription plan
+    subscription: {
+        plan: { type: String, enum: ['free', 'pro'], default: 'free' },
+        razorpayId: String,
+        status: { type: String, enum: ['active', 'cancelled', 'expired'], default: 'expired' },
+        currentPeriodEnd: Date,
+    },
+
+    // Email verification
+    emailVerified: {
+        type: Boolean,
+        default: false
+    },
+
+    verificationToken: {
+        type: String,
+        default: null
+    },
+
+    verificationTokenExpiry: {
+        type: Date,
+        default: null
+    },
+
+    // Password reset
+    resetToken: {
+        type: String,
+        default: null
+    },
+
+    resetTokenExpiry: {
+        type: Date,
+        default: null
+    },
+
+    // Onboarding
+    onboardingComplete: {
+        type: Boolean,
+        default: false
+    },
+
     // Timestamps
     createdAt: {
         type: Date,
