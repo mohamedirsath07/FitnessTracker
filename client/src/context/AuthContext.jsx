@@ -75,11 +75,10 @@ export function AuthProvider({ children }) {
             setError(null);
             const response = await authAPI.register(userData);
 
-            // v1: Registration no longer returns a token.
-            // User must verify their email first.
-            if (response.data.needsVerification) {
-                return { success: true, needsVerification: true };
-            }
+            // Store token and user
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            setUser(response.data.user);
 
             return { success: true };
         } catch (err) {
@@ -129,6 +128,27 @@ export function AuthProvider({ children }) {
     };
 
     /**
+     * Google Login
+     */
+    const googleLogin = async (token) => {
+        try {
+            setError(null);
+            const response = await authAPI.googleLogin(token);
+
+            // Store token and user
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            setUser(response.data.user);
+
+            return { success: true };
+        } catch (err) {
+            const message = err.response?.data?.message || 'Google login failed';
+            setError(message);
+            return { success: false, error: message };
+        }
+    };
+
+    /**
      * Logout user
      */
     const logout = () => {
@@ -154,6 +174,7 @@ export function AuthProvider({ children }) {
         isAuthenticated: !!user,
         register,
         login,
+        googleLogin,
         logout,
         updateUser,
     };

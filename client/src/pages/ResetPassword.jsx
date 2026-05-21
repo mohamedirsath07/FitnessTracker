@@ -67,7 +67,7 @@ export default function ResetPassword() {
             <div className="w-full max-w-sm animate-fade-up">
                 {/* Brand */}
                 <div className="mb-10 text-center">
-                    <h1 className="text-3xl font-semibold tracking-tight mb-2">Arc</h1>
+                    <h1 className="text-3xl font-semibold tracking-tight mb-2">Level Up</h1>
                     <p className="text-zinc-500 text-sm">Choose a new password</p>
                 </div>
 

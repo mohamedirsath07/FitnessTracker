@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
 import { Input } from '../components/ui';
 
 export default function Login() {
     const navigate = useNavigate();
-    const { login, error } = useAuth();
+    const { login, googleLogin, error } = useAuth();
     const [formData, setFormData] = useState({ identifier: '', password: '' });
     const [loading, setLoading] = useState(false);
     const [verificationNeeded, setVerificationNeeded] = useState(false);
@@ -19,6 +21,21 @@ export default function Login() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleGoogleSignIn = async () => {
+        setLoading(true);
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            const idToken = await result.user.getIdToken();
+            const res = await googleLogin(idToken);
+            if (res.success) {
+                navigate('/dashboard');
+            }
+        } catch (error) {
+            console.error('Firebase Google Sign-In Error:', error);
+        }
+        setLoading(false);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -27,9 +44,6 @@ export default function Login() {
         const result = await login(formData);
         if (result.success) {
             navigate('/dashboard');
-        } else if (result.needsVerification) {
-            setVerificationNeeded(true);
-            setVerificationEmail(result.email || '');
         }
         setLoading(false);
     };
@@ -53,7 +67,7 @@ export default function Login() {
                 {/* Brand */}
                 <div className="mb-10 text-center">
                     <h1 className="text-3xl font-semibold tracking-tight mb-2">
-                        Arc
+                        Level Up
                     </h1>
                     <p className="text-zinc-500 text-sm">
                         Sign in to your account
@@ -116,7 +130,30 @@ export default function Login() {
                             )}
                         </button>
 
-                        <p className="text-center text-xs text-zinc-500 mt-4">
+                        <div className="mt-6 relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-white/[0.06]"></div>
+                            </div>
+                            <div className="relative flex justify-center text-xs">
+                                <span className="bg-[var(--bg-surface)] px-2 text-zinc-500">Or continue with</span>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={handleGoogleSignIn}
+                                disabled={loading}
+                                className="flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-xl border border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.06] transition-colors text-sm font-medium disabled:opacity-50"
+                            >
+                                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                                    <path fill="#EA4335" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
+                                </svg>
+                                Continue with Google
+                            </button>
+                        </div>
+
+                        <p className="text-center text-xs text-zinc-500 mt-6">
                             <Link to="/forgot-password" className="text-zinc-400 hover:text-zinc-300 transition-colors">
                                 Forgot password?
                             </Link>

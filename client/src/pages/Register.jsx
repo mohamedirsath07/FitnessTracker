@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input } from '../components/ui';
 import { Scale, Ruler, User, Target, ChevronLeft, ChevronRight, Check } from 'lucide-react';
@@ -85,7 +87,7 @@ const DEFAULT_AVATARS = [
 
 export default function Register() {
     const navigate = useNavigate();
-    const { register, error } = useAuth();
+    const { register, googleLogin, error } = useAuth();
 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -136,6 +138,21 @@ export default function Register() {
         }
     };
 
+    const handleGoogleSignIn = async () => {
+        setLoading(true);
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            const idToken = await result.user.getIdToken();
+            const res = await googleLogin(idToken);
+            if (res.success) {
+                navigate('/dashboard');
+            }
+        } catch (error) {
+            console.error('Firebase Google Sign-In Error:', error);
+        }
+        setLoading(false);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -159,11 +176,7 @@ export default function Register() {
         const result = await register(payload);
 
         if (result.success) {
-            if (result.needsVerification) {
-                navigate('/verify-email');
-            } else {
-                navigate('/dashboard');
-            }
+            navigate('/dashboard');
         }
         setLoading(false);
     };
@@ -284,6 +297,29 @@ export default function Register() {
                             >
                                 Continue <ChevronRight size={16} />
                             </Button>
+
+                            <div className="mt-6 relative">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-white/[0.06]"></div>
+                                </div>
+                                <div className="relative flex justify-center text-xs">
+                                    <span className="bg-[var(--bg-surface)] px-2 text-zinc-500">Or continue with</span>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-center">
+                                <button
+                                    type="button"
+                                    onClick={handleGoogleSignIn}
+                                    disabled={loading}
+                                    className="flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-xl border border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.06] transition-colors text-sm font-medium disabled:opacity-50"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                                        <path fill="#EA4335" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
+                                    </svg>
+                                    Sign up with Google
+                                </button>
+                            </div>
 
                             <p className="text-center text-sm text-zinc-500 mt-6">
                                 Already have an account?{' '}

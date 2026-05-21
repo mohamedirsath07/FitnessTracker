@@ -109,11 +109,11 @@ function PostEffects() {
   return (
     <EffectComposer multisampling={4}>
       <Bloom
-        intensity={0.25}
-        luminanceThreshold={0.7}
-        luminanceSmoothing={0.9}
+        intensity={0.8}
+        luminanceThreshold={0.9} // High threshold so only emissive glows
+        luminanceSmoothing={0.1}
         mipmapBlur
-        radius={0.6}
+        radius={0.5}
       />
       <Vignette
         offset={0.3}

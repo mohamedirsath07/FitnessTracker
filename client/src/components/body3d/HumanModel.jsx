@@ -25,25 +25,19 @@ import * as THREE from 'three';
 /** Normalize bodyFat 10–30% → 0–1 */
 const fatNorm = (bf) => Math.max(0, Math.min(1, (bf - 10) / 20));
 
-/** Premium PBR skin material */
+/** Premium Cyber-Scan Hologram material */
 function createSkinMaterial() {
-  return new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color('#c9957a'),
+  return new THREE.MeshStandardMaterial({
+    color: new THREE.Color('#050510'),
     roughness: 0.6,
-    metalness: 0.1,
-    clearcoat: 0.12,
-    clearcoatRoughness: 0.6,
-    sheen: 0.35,
-    sheenRoughness: 0.5,
-    sheenColor: new THREE.Color('#ffccaa'),
-    thickness: 1.2,
-    attenuationColor: new THREE.Color('#ff8866'),
-    attenuationDistance: 0.5,
-    envMapIntensity: 1.6,
-    emissive: new THREE.Color('#ff3300'),
-    emissiveIntensity: 0,
-    flatShading: false,
-    side: THREE.FrontSide,
+    metalness: 0.3,
+    envMapIntensity: 0.5, // Much lower so studio lights don't blow it out
+    emissive: new THREE.Color('#1d4ed8'),
+    emissiveIntensity: 0.5,
+    transparent: true,
+    opacity: 0.75,
+    wireframe: true,
+    side: THREE.DoubleSide,
   });
 }
 
@@ -139,15 +133,17 @@ export default function HumanModel({
 
   useEffect(() => { targetFatRef.current = bodyFat; }, [bodyFat]);
 
-  // Calorie burn → subtle warmth on model
+  // Calorie burn → transition emissive from cyan to orange/red
   useEffect(() => {
     const heat = Math.min(calorieBurn / 500, 1);
+    const baseColor = new THREE.Color('#00ffff'); // Cyan for cool/base
+    const hotColor = new THREE.Color('#ff3300'); // Intense orange for heat
+    
     meshesRef.current.forEach((m) => {
       if (m.material) {
-        m.material.emissiveIntensity = heat * 0.12;
-        m.material.emissive.setHex(
-          heat > 0.6 ? 0xff4400 : heat > 0.3 ? 0xff3300 : 0xff2200
-        );
+        // Keep intensity controlled so the wireframe stays crisp
+        m.material.emissiveIntensity = 0.2 + (heat * 0.5);
+        m.material.emissive.lerpColors(baseColor, hotColor, heat);
       }
     });
   }, [calorieBurn]);

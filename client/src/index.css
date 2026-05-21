@@ -1,13 +1,11 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════
-   ARC FITNESS — Design System
+   LEVEL UP — Design System
    
-   Philosophy: Calm precision. Data clarity.
-   Inspired by: Apple Health, Linear, Arc Browser
-   
-   No neon. No glow. No gaming aesthetic.
-   Quiet confidence. Premium minimalism.
+   Philosophy: Bold, energetic, and highly aesthetic.
+   Vibrant colors, dark glassmorphism, glowing accents, 
+   and micro-animations.
    ═══════════════════════════════════════════ */
 
 :root {
@@ -55,15 +53,16 @@
   --danger: #EF4444;
   --danger-muted: rgba(239, 68, 68, 0.12);
 
-  /* ─── Shadows (no glow) ─── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* ─── Shadows & Glows ─── */
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
 
-  /* Legacy glow aliases — now mapped to neutral shadows */
-  --shadow-glow-cyan: var(--shadow-sm);
-  --shadow-glow-amber: var(--shadow-sm);
-  --shadow-glow-violet: var(--shadow-sm);
+  /* Vibrant Glowing Accents */
+  --shadow-glow-cyan: 0 0 12px rgba(6, 182, 212, 0.5);
+  --shadow-glow-amber: 0 0 12px rgba(245, 158, 11, 0.5);
+  --shadow-glow-violet: 0 0 12px rgba(139, 92, 246, 0.5);
+  --shadow-glow-primary: 0 0 20px rgba(59, 130, 246, 0.4);
 
   /* ─── Radius ─── */
   --radius-sm: 8px;
@@ -88,9 +87,10 @@ html {
 }
 
 body {
-  background: var(--bg-root);
+  background: radial-gradient(circle at top, #1a1a2e 0%, var(--bg-root) 100%);
+  background-attachment: fixed;
   color: var(--text-primary);
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: 'Outfit', 'Inter', -apple-system, 'SF Pro Display', system-ui, sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

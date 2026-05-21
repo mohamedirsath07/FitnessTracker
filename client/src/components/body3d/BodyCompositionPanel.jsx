@@ -37,7 +37,13 @@ function computeMetrics(weight, bodyFat, height, gender) {
     bmi < 25 ? '#4ade80' :
     bmi < 30 ? '#fbbf24' : '#f87171';
 
-  return { fatMass, leanMass, bmi, bmr, bmiCategory, bmiColor };
+  // NEW PREMIUM METRICS
+  const skeletalMuscleMass = leanMass * 0.82; // Approx skeletal muscle
+  const visceralFat = Math.max(1, Math.round((bodyFat * 0.4) + ((bmi - 22) * 0.5)));
+  const visceralFatColor = visceralFat < 10 ? '#4ade80' : visceralFat < 15 ? '#fbbf24' : '#f87171';
+  const hydration = (leanMass * 0.73) / weight * 100;
+
+  return { fatMass, leanMass, bmi, bmr, bmiCategory, bmiColor, skeletalMuscleMass, visceralFat, visceralFatColor, hydration };
 }
 
 /** Circular progress ring with glow */
@@ -212,10 +218,13 @@ export default function BodyCompositionPanel({
         <div className="space-y-0">
           <MetricRow label="Lean Mass" value={m.leanMass.toFixed(1)} unit="kg" color="#3b82f6" delay={0.3} icon />
           <MetricRow label="Fat Mass" value={m.fatMass.toFixed(1)} unit="kg" color="#fbbf24" delay={0.35} icon />
-          <MetricRow label="BMI" value={m.bmi.toFixed(1)} unit={m.bmiCategory} color={m.bmiColor} delay={0.4} icon />
-          <MetricRow label="BMR" value={Math.round(m.bmr)} unit="kcal/day" color="#a78bfa" delay={0.45} icon />
-          <MetricRow label="Weight" value={weight} unit="kg" delay={0.5} />
-          <MetricRow label="Height" value={height} unit="cm" delay={0.55} />
+          <MetricRow label="Skeletal Muscle" value={m.skeletalMuscleMass.toFixed(1)} unit="kg" color="#2dd4bf" delay={0.4} icon />
+          <MetricRow label="Visceral Fat" value={m.visceralFat} unit="lvl" color={m.visceralFatColor} delay={0.45} icon />
+          <MetricRow label="Hydration" value={m.hydration.toFixed(1)} unit="%" color="#60a5fa" delay={0.5} icon />
+          <MetricRow label="BMI" value={m.bmi.toFixed(1)} unit={m.bmiCategory} color={m.bmiColor} delay={0.55} icon />
+          <MetricRow label="BMR" value={Math.round(m.bmr)} unit="kcal/day" color="#a78bfa" delay={0.6} icon />
+          <MetricRow label="Weight" value={weight} unit="kg" delay={0.65} />
+          <MetricRow label="Height" value={height} unit="cm" delay={0.7} />
         </div>
       </div>
     </motion.div>

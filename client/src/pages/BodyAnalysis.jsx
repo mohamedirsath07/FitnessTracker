@@ -79,34 +79,8 @@ function SceneLoadingOverlay({ isLoading }) {
 }
 
 /* ──────────────────────────────────────────────
-   Gender Toggle — pill switch
+   Gender toggle removed for premium focus
    ────────────────────────────────────────────── */
-function GenderToggle({ gender, onChange }) {
-  return (
-    <div className="relative flex items-center gap-0.5 bg-white/[0.03] rounded-xl p-0.5 border border-white/[0.06]">
-      <motion.div
-        className="absolute top-0.5 bottom-0.5 rounded-[10px] bg-blue-500/10 border border-blue-500/20"
-        layout
-        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        style={{
-          width: 'calc(50% - 2px)',
-          left: gender === 'male' ? '2px' : 'calc(50%)',
-        }}
-      />
-      {['male', 'female'].map((g) => (
-        <button
-          key={g}
-          onClick={() => onChange(g)}
-          className={`relative z-10 px-4 py-1.5 rounded-[10px] text-[10px] tracking-wider capitalize font-medium transition-colors duration-200 ${
-            gender === g ? 'text-white' : 'text-zinc-600 hover:text-zinc-400'
-          }`}
-        >
-          {g}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /* ──────────────────────────────────────────────
    Quick Input with stepper
@@ -182,7 +156,7 @@ export default function BodyAnalysis() {
   const [bodyFat, setBodyFat] = useState(20);
   const [weight, setWeight] = useState(75);
   const [height, setHeight] = useState(175);
-  const [gender, setGender] = useState('male');
+  const [gender] = useState('male');
   const [calorieBurn, setCalorieBurn] = useState(200);
   const [modelLoaded, setModelLoaded] = useState(false);
   const [showPanel, setShowPanel] = useState(true);
@@ -228,7 +202,6 @@ export default function BodyAnalysis() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <GenderToggle gender={gender} onChange={setGender} />
             <button
               onClick={resetDefaults}
               className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-all active:scale-90"

@@ -21,10 +21,21 @@ function applyMaterial(child) {
   child.receiveShadow = false;
   child.frustumCulled = true;
 
-  if (child.material) {
-    child.material.envMapIntensity = 0.85;
-    child.material.needsUpdate = true;
-  }
+  const premiumMaterial = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color('#101018'),
+    metalness: 0.9,
+    roughness: 0.2,
+    envMapIntensity: 2.0,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.1,
+    emissive: new THREE.Color('#3b82f6'),
+    emissiveIntensity: 0.3,
+    wireframe: false,
+    transparent: true,
+    opacity: 0.9
+  });
+
+  child.material = premiumMaterial;
 }
 
 /* ─── Adaptive performance — halve resolution on slow frames ─── */
