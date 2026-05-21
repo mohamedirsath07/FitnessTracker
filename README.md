@@ -1,45 +1,55 @@
-# 🏋️ FitnessTracker
+<div align="center">
+  <img src="Logo.png" alt="LevelUp Fitness Logo" width="200"/>
+  <h1>🏋️ LevelUp Fitness Tracker</h1>
+  <p><strong>A premium, full-stack MERN application with 3D cybernetic body visualization.</strong></p>
 
-A full-stack **MERN** (MongoDB, Express.js, React, Node.js) fitness tracking application with **3D body visualization** using React Three Fiber.
+  [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+  [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+  [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+  [![Three.js](https://img.shields.io/badge/Three.js-3D-black?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
+  
+  <br />
 
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
-![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js)
-![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb)
-![Three.js](https://img.shields.io/badge/Three.js-3D-000000?logo=three.js)
+  <h3><a href="https://levelup123.vercel.app/login">🌐 Live Demo (Vercel)</a></h3>
+</div>
 
-## 🌐 Live Demo
-
-**[🚀 level-up-lime.vercel.app](https://level-up-lime.vercel.app/)**
+<br/>
 
 ## ✨ Features
 
-- 🎮 **Gamification System** - Earn XP, level up ranks (E → S → National), maintain streaks
-- 🧍 **3D Body Visualization** - Interactive 3D human model that scales based on your metrics
-- 🏃 **Workout Tracking** - Log exercises with MET-based calorie calculations
-- 🥗 **Nutrition Logging** - Track meals, calories, and macros (protein, carbs, fats)
-- 📊 **Progress Charts** - Visual analytics with Recharts
-- 🔐 **JWT Authentication** - Secure login/register system
+LevelUp is designed to bring gamification and high-end visualization to fitness tracking:
+
+- 🎮 **Gamification System** - Earn XP, level up ranks (E → S → National), and maintain daily streaks.
+- 🧍 **3D Cybernetic Body Visualization** - Interactive 3D human model built with React Three Fiber featuring a premium glowing wireframe shader that reacts to calorie burn.
+- 🩺 **Advanced Premium Metrics** - Tracks Skeletal Muscle Mass, Visceral Fat, Hydration Levels, and BMI/BMR.
+- 🏃 **Workout Tracking** - Log exercises with MET-based calorie calculations.
+- 🥗 **Nutrition Logging** - Track meals, calories, and macros (protein, carbs, fats).
+- 📊 **Progress Charts** - Visual analytics with Recharts for daily and weekly progress.
+- 🔐 **JWT Authentication** - Secure login and registration system.
+
+---
 
 ## 🛠️ Tech Stack
 
-### Backend
-- **Node.js** + **Express.js** - REST API server
-- **MongoDB** + **Mongoose** - Database & ODM
-- **JWT** - Authentication
-- **bcrypt** - Password hashing
+### Frontend (Client)
+- **React 19** + **Vite** - Lightning-fast development and build tool.
+- **TailwindCSS** - Utility-first styling for a sleek, dark-mode premium UI.
+- **React Three Fiber / Drei** - 3D model rendering and post-processing effects (Bloom).
+- **Framer Motion** - Fluid micro-animations and page transitions.
+- **Recharts** - Responsive data visualization.
 
-### Frontend
-- **React 19** + **Vite** - Fast development
-- **TailwindCSS** - Styling
-- **React Three Fiber** - 3D visualization
-- **Recharts** - Analytics charts
-- **Axios** - API communication
+### Backend (Server)
+- **Node.js** + **Express.js** - Robust REST API architecture.
+- **MongoDB** + **Mongoose** - NoSQL database and Object Data Modeling.
+- **JWT & bcrypt** - Secure authentication and password hashing.
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+
-- MongoDB (local or Atlas)
+- MongoDB (Local instance or MongoDB Atlas)
 
 ### 1. Clone the repository
 ```bash
@@ -47,72 +57,81 @@ git clone https://github.com/mohamedirsath07/FitnessTracker.git
 cd FitnessTracker
 ```
 
-### 2. Setup Backend
+### 2. Setup Backend Environment
 ```bash
 cd server
 npm install
 ```
-
-Create `.env` file in `/server`:
+Create a `.env` file in the `/server` directory:
 ```env
-MONGO_URI=mongodb+srv://your_username:your_password@cluster.mongodb.net/fitness-tracker
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/fitness-tracker?retryWrites=true&w=majority
 JWT_SECRET=your-super-secret-key
 PORT=5000
 NODE_ENV=development
 ```
-
-Start the server:
+Start the backend server:
 ```bash
 npm run dev
 ```
 
-### 3. Setup Frontend
+### 3. Setup Frontend Environment
+Open a new terminal and navigate to the client folder:
 ```bash
 cd client
 npm install
 npm run dev
 ```
+Navigate to `http://localhost:5173` to view the application!
 
-### 4. Open the app
-Navigate to `http://localhost:5173`
+---
 
-## 📁 Project Structure
+## 📁 Repository Structure
 
-```
+Our repository follows a clean, professional monorepo-style structure:
+
+```text
 FitnessTracker/
+├── docs/                   # System architecture and design documentation
+│   ├── ARCHITECTURE.md
+│   ├── DEPLOYMENT.md
+│   └── DESIGN_SYSTEM.md
 ├── client/                 # React Frontend
-│   ├── public/models/      # 3D GLB models
+│   ├── public/models/      # 3D GLB character models
 │   ├── src/
-│   │   ├── components/     # UI components + 3D visualizer
-│   │   ├── context/        # Auth context
-│   │   ├── pages/          # App pages
-│   │   └── services/       # API client
-│   └── vite.config.js
-│
+│   │   ├── components/     # Reusable UI components & 3D visualizers
+│   │   ├── context/        # React Context providers (Auth)
+│   │   ├── pages/          # Full page layouts
+│   │   └── services/       # API integration layers
+│   └── vite.config.js      # Vite build configuration
 ├── server/                 # Node.js Backend
-│   ├── config/             # DB connection
-│   ├── middleware/         # Auth middleware
+│   ├── config/             # Database connection setups
+│   ├── middleware/         # Express middleware (Auth protection)
 │   ├── models/             # Mongoose schemas
-│   ├── routes/             # API routes
-│   └── server.js
-│
+│   ├── routes/             # Express API routers
+│   └── server.js           # Server entry point
 └── README.md
 ```
+*(For detailed architecture and design guidelines, please check the [`docs/`](./docs/) directory.)*
 
-## 🔑 API Endpoints
+---
+
+## 🔑 Key API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/register` | Create account |
-| POST | `/api/auth/login` | Login |
-| GET | `/api/auth/me` | Get current user |
-| PUT | `/api/users/profile` | Update profile |
-| GET | `/api/users/stats` | Dashboard stats |
-| GET/POST | `/api/workouts` | Workout CRUD |
-| GET/POST | `/api/meals` | Meal CRUD |
-| GET | `/api/progress/today` | Daily progress |
+| POST | `/api/auth/register` | Create a new user account |
+| POST | `/api/auth/login` | Authenticate and retrieve JWT |
+| GET | `/api/auth/me` | Fetch current authenticated user |
+| PUT | `/api/users/profile` | Update user metrics and goals |
+| GET | `/api/users/stats` | Retrieve dashboard gamification stats |
+| GET/POST | `/api/workouts` | Retrieve or log workouts |
+| GET/POST | `/api/meals` | Retrieve or log nutrition meals |
+
+---
 
 ## 🎮 Gamification Ranks
+
+The system uses an RPG-style ranking system to keep users motivated:
 
 | Rank | XP Required |
 |------|-------------|
@@ -124,15 +143,11 @@ FitnessTracker/
 | S Rank | 25,000 |
 | National Level | 50,000+ |
 
-## 📸 Screenshots
-
-*Dashboard with 3D body visualization, stats, and charts*
+---
 
 ## 📄 License
 
-MIT License - feel free to use this project for learning!
+This project is licensed under the MIT License - feel free to use this project for learning and personal growth!
 
----
-
-Built with ❤️ by Mohamed Irsath
- 
+<br />
+<p align="center">Built with ❤️ by Mohamed Irsath</p>
