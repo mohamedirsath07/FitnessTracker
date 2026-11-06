@@ -43,7 +43,7 @@ api.interceptors.request.use(
 
         if (token) {
             // Add Authorization header
-            config.headers.Authorization = `Bearer ${token}`;
+            config.headers.Authorization = ['Bearer', token].join(' ');
         }
 
         return config;
@@ -99,6 +99,7 @@ export const authAPI = {
 
 export const userAPI = {
     updateProfile: (data) => api.put('/users/profile', data),
+    completeOnboarding: (data) => api.post('/users/onboarding', data),
     getStats: () => api.get('/users/stats'),
     getLeaderboard: () => api.get('/users/leaderboard'),
 };

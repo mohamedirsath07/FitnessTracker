@@ -10,7 +10,6 @@
  */
 
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
 
 /* ──────────────────────────────────────────────
    Metric computation helpers

@@ -9,8 +9,8 @@
  * - Glassmorphism card styling
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, useSpring, useTransform } from 'framer-motion';
 
 const HEAT_LEVELS = [
   { max: 100, label: 'Rest', color: '#3b82f6', flame: 0.2 },

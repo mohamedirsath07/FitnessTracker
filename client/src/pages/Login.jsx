@@ -28,7 +28,7 @@ export default function Login() {
             const idToken = await result.user.getIdToken();
             const res = await googleLogin(idToken);
             if (res.success) {
-                navigate('/dashboard');
+                navigate('/');
             }
         } catch (error) {
             console.error('Firebase Google Sign-In Error:', error);
@@ -43,7 +43,10 @@ export default function Login() {
         setResendMsg('');
         const result = await login(formData);
         if (result.success) {
-            navigate('/dashboard');
+            navigate('/');
+        } else if (result.needsVerification) {
+            setVerificationNeeded(true);
+            setVerificationEmail(result.email || formData.identifier);
         }
         setLoading(false);
     };

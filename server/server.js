@@ -46,10 +46,10 @@ const workoutRoutes = require('./routes/workouts');
 const mealRoutes = require('./routes/meals');
 const progressRoutes = require('./routes/progress');
 const questRoutes = require('./routes/quests');
+const paymentRoutes = require('./routes/payments');
 // v1: Frozen — guild, admin, payments routes disabled for launch focus
 // const guildRoutes = require('./routes/guilds');
 // const adminRoutes = require('./routes/admin');
-// const paymentRoutes = require('./routes/payments');
 
 /**
  * Connect to MongoDB
@@ -70,6 +70,7 @@ if (require.main === module) {
  * - Starting the server (app.listen)
  */
 const app = express();
+app.set('trust proxy', 1);
 
 /**
  * ============================================
@@ -113,6 +114,34 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Keep deployment liveness monitoring independent from application traffic limits.
+app.get('/api/health/live', (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: 'FitnessTracker API process is running.',
+        timestamp: new Date().toISOString(),
+    });
+});
+
+// Readiness includes the database connection and is useful for diagnostics.
+app.get('/api/health', (req, res) => {
+    const dbState = mongoose.connection.readyState;
+    const dbStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+    const database = dbStates[dbState] || 'unknown';
+
+    res.status(database === 'connected' ? 200 : 503).json({
+        success: database === 'connected',
+        message: database === 'connected'
+            ? 'FitnessTracker API is running!'
+            : 'FitnessTracker API is running, but the database is unavailable.',
+        timestamp: new Date().toISOString(),
+        uptime: `${Math.floor(process.uptime())}s`,
+        environment: process.env.NODE_ENV || 'development',
+        database,
+        version: require('./package.json').version,
+    });
+});
 
 /**
  * Body Parsers
@@ -197,22 +226,6 @@ if (process.env.NODE_ENV === 'production') {
  *   The full path becomes: POST /api/auth/login
  */
 
-// Health check endpoint (useful for deployment monitoring)
-app.get('/api/health', (req, res) => {
-    const dbState = mongoose.connection.readyState;
-    const dbStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
-    
-    res.json({
-        success: true,
-        message: 'FitnessTracker API is running!',
-        timestamp: new Date().toISOString(),
-        uptime: `${Math.floor(process.uptime())}s`,
-        environment: process.env.NODE_ENV || 'development',
-        database: dbStates[dbState] || 'unknown',
-        version: require('./package.json').version,
-    });
-});
-
 // Mount route files (auth routes get stricter rate limiting)
 app.use('/api/auth', authLimiter, authRoutes);       // /api/auth/register, /api/auth/login, etc.
 app.use('/api/users', userRoutes);      // /api/users/profile, /api/users/stats
@@ -220,6 +233,7 @@ app.use('/api/workouts', workoutRoutes);// /api/workouts, /api/workouts/:id
 app.use('/api/meals', mealRoutes);      // /api/meals, /api/meals/today
 app.use('/api/progress', progressRoutes);// /api/progress, /api/progress/weight
 app.use('/api/quests', questRoutes);     // /api/quests
+app.use('/api/payments', paymentRoutes);
 // v1: Frozen — guild, admin, payments routes disabled for launch focus
 // app.use('/api/guilds', guildRoutes);     // /api/guilds
 // app.use('/api/admin', adminRoutes);      // /api/admin/dashboard

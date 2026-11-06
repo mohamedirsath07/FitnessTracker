@@ -26,7 +26,7 @@ export default function NavBar() {
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">
             <div className="bg-[var(--bg-root)]/95 backdrop-blur-xl border-t border-white/[0.06] px-2 py-1.5 flex items-center justify-around max-w-lg mx-auto">
-                {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
+                {NAV_ITEMS.map(({ path, icon, label }) => {
                     const active = isActive(pathname, path);
                     return (
                         <button
@@ -38,7 +38,7 @@ export default function NavBar() {
                                     : 'text-zinc-500 hover:text-zinc-400 active:scale-95'
                             }`}
                         >
-                            <Icon size={20} strokeWidth={active ? 2 : 1.6} />
+                            {React.createElement(icon, { size: 20, strokeWidth: active ? 2 : 1.6 })}
                             <span className={`text-[10px] font-medium ${active ? 'text-white' : 'text-zinc-600'}`}>
                                 {label}
                             </span>

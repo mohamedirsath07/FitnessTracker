@@ -17,7 +17,7 @@
  */
 
 import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataCacheProvider } from './context/DataCacheContext';
 import { LoadingScreen } from './components/ui';
@@ -36,6 +36,8 @@ const Profile = React.lazy(() => import('./pages/Profile'));
 const Quests = React.lazy(() => import('./pages/Quests'));
 const GuildPage = React.lazy(() => import('./pages/Guild'));
 const BodyAnalysis = React.lazy(() => import('./pages/BodyAnalysis'));
+const Onboarding = React.lazy(() => import('./pages/Onboarding'));
+const Pricing = React.lazy(() => import('./pages/Pricing'));
 
 /**
  * ProtectedRoute Component
@@ -44,7 +46,9 @@ const BodyAnalysis = React.lazy(() => import('./pages/BodyAnalysis'));
  * If user is not logged in, redirects to login page.
  */
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
+  const location = useLocation();
+  const isOnboardingRoute = location.pathname === '/onboarding';
 
   if (loading) {
     return <LoadingScreen />;
@@ -52,6 +56,10 @@ function ProtectedRoute({ children }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!isOnboardingRoute && user && user.onboardingComplete === false) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
@@ -101,8 +109,20 @@ function AppRoutes() {
           </PublicRoute>
         }
       />
+      <Route
+        path="/pricing"
+        element={<Pricing />}
+      />
 
       {/* Protected Routes */}
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/"
         element={

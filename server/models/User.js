@@ -124,6 +124,28 @@ const UserSchema = new mongoose.Schema({
         default: 'maintenance'
     },
 
+    activityLevel: {
+        type: String,
+        enum: ['beginner', 'intermediate', 'advanced'],
+        default: 'beginner'
+    },
+
+    equipment: {
+        type: [String],
+        default: []
+    },
+
+    dietaryPreference: {
+        type: String,
+        enum: ['omnivore', 'vegetarian', 'vegan', 'pescatarian', 'none'],
+        default: 'none'
+    },
+
+    targetDate: {
+        type: Date,
+        default: null
+    },
+
     dailyCalorieGoal: {
         type: Number,
         default: 2000
@@ -188,6 +210,7 @@ const UserSchema = new mongoose.Schema({
     subscription: {
         plan: { type: String, enum: ['free', 'pro'], default: 'free' },
         razorpayId: String,
+        customerId: String,
         status: { type: String, enum: ['active', 'cancelled', 'expired'], default: 'expired' },
         currentPeriodEnd: Date,
     },

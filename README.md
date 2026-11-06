@@ -26,6 +26,8 @@ LevelUp is designed to bring gamification and high-end visualization to fitness 
 - 🥗 **Nutrition Logging** - Track meals, calories, and macros (protein, carbs, fats).
 - 📊 **Progress Charts** - Visual analytics with Recharts for daily and weekly progress.
 - 🔐 **JWT Authentication** - Secure login and registration system.
+- 🧭 **Personalized Onboarding** - Goal, experience, equipment, nutrition preference, and target date setup.
+- 💳 **SaaS Plan Foundation** - Free/Pro entitlements and Razorpay checkout integration points.
 
 ---
 
@@ -42,6 +44,7 @@ LevelUp is designed to bring gamification and high-end visualization to fitness 
 - **Node.js** + **Express.js** - Robust REST API architecture.
 - **MongoDB** + **Mongoose** - NoSQL database and Object Data Modeling.
 - **JWT & bcrypt** - Secure authentication and password hashing.
+- **Razorpay** - Optional subscription checkout and signed webhook support.
 
 ---
 
@@ -82,6 +85,55 @@ npm install
 npm run dev
 ```
 Navigate to `http://localhost:5173` to view the application!
+
+### Production demo checklist
+
+The public frontend is available at [levelup123.vercel.app](https://levelup123.vercel.app/login).
+The backend must be running and connected to MongoDB before registration or login can be tested.
+For a recruiter demo, configure a non-personal demo account in the deployed database and share its
+credentials separately; never commit credentials to this repository.
+
+Check backend readiness with:
+
+```text
+https://fitnesstracker-2qax.onrender.com/api/health
+```
+
+The endpoint returns HTTP 200 only when the API and MongoDB connection are ready.
+
+### Product flows
+
+New accounts complete `/onboarding` before reaching the protected product. The setup creates
+personalized calorie and activity targets that power the dashboard. The `/pricing` page exposes
+the free/Pro product boundary; configure Razorpay variables in the backend before enabling live
+checkout:
+
+```env
+RAZORPAY_KEY_ID=...
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_PLAN_MONTHLY=...
+RAZORPAY_PLAN_YEARLY=...
+RAZORPAY_WEBHOOK_SECRET=...
+```
+
+Checkout intentionally returns a clear configuration error when these values are absent rather
+than pretending a subscription was created.
+
+### Validation
+
+Run the same checks used by CI:
+
+```bash
+cd client
+npm ci
+npm run lint
+npm run build
+
+cd ../server
+npm ci
+npm test
+npm audit --omit=dev --audit-level=high
+```
 
 ---
 
@@ -126,6 +178,9 @@ FitnessTracker/
 | GET | `/api/users/stats` | Retrieve dashboard gamification stats |
 | GET/POST | `/api/workouts` | Retrieve or log workouts |
 | GET/POST | `/api/meals` | Retrieve or log nutrition meals |
+| POST | `/api/users/onboarding` | Save personalized plan preferences |
+| GET | `/api/payments/status` | Retrieve subscription status |
+| POST | `/api/payments/subscribe` | Start optional Razorpay checkout |
 
 ---
 
@@ -136,11 +191,11 @@ The system uses an RPG-style ranking system to keep users motivated:
 | Rank | XP Required |
 |------|-------------|
 | E Rank | 0 |
-| D Rank | 500 |
-| C Rank | 1,500 |
-| B Rank | 4,000 |
+| D Rank | 1,000 |
+| C Rank | 2,500 |
+| B Rank | 5,000 |
 | A Rank | 10,000 |
-| S Rank | 25,000 |
+| S Rank | 20,000 |
 | National Level | 50,000+ |
 
 ---

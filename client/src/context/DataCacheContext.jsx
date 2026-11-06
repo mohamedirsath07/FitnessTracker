@@ -8,6 +8,7 @@
  * Invalidation marks data as stale but keeps it for instant rendering.
  */
 
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useRef, useCallback } from 'react';
 import { userAPI, workoutAPI, mealAPI } from '../services/api';
 

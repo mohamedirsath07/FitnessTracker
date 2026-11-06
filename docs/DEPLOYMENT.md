@@ -140,9 +140,11 @@ After both are deployed, update Render environment:
 
 1. **Test Backend**:
    ```
-   https://fitness-tracker-api.onrender.com/api/health
+   https://fitness-tracker-api.onrender.com/api/health/live
    ```
-   Should return: `{"status": "ok", ...}`
+   This liveness endpoint should return HTTP 200 whenever the Node process is running.
+   Use `/api/health` as the readiness check; it returns HTTP 200 with `"database": "connected"`
+   only when MongoDB is ready, or HTTP 503 with diagnostic status when it is unavailable.
 
 2. **Test Frontend**:
    - Open your Vercel URL
@@ -161,6 +163,9 @@ After both are deployed, update Render environment:
 - Render free tier sleeps after 15 min of inactivity
 - First request may take 30-60 seconds to wake up
 - Consider upgrading to paid tier for always-on
+
+If repeated requests return 503 after the service wakes, inspect the Render logs for
+`MONGO_URI`, MongoDB Atlas network access, and database connection errors.
 
 ### "MongoDB connection failed"
 - Check `MONGO_URI` is correct in Render

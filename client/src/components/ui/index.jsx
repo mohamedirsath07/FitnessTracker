@@ -106,7 +106,7 @@ export function Input({
 
 // ─── Toast ────────────────────────────────
 
-export function Toast({ message, type = 'info', onClose }) {
+export function Toast({ message, type = 'info' }) {
     const styles = {
         info: { bg: 'bg-zinc-900 border-white/[0.08]', dot: 'bg-blue-400', text: 'text-zinc-100' },
         success: { bg: 'bg-zinc-900 border-white/[0.08]', dot: 'bg-emerald-400', text: 'text-zinc-100' },

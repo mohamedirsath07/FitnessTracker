@@ -22,6 +22,7 @@
  * 3. Use useContext() hook to access values in any component
  */
 
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
 
@@ -54,7 +55,7 @@ export function AuthProvider({ children }) {
                     // Verify token and get user data
                     const response = await authAPI.getMe();
                     setUser(response.data.user);
-                } catch (err) {
+                } catch {
                     // Token invalid - clear storage
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');

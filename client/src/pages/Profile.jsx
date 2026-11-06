@@ -31,7 +31,6 @@ export default function Profile() {
     const { user, logout, updateUser } = useAuth();
     const [saving, setSaving] = useState(false);
     const [notification, setNotification] = useState(null);
-    const [activeTab, setActiveTab] = useState('metrics'); // 'metrics' or 'goals'
     const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
     const [showPictureModal, setShowPictureModal] = useState(false);
     const fileInputRef = useRef(null);
@@ -136,7 +135,7 @@ export default function Profile() {
             const response = await userAPI.updateProfile(payload);
             updateUser(response.data.user);
             setNotification({ type: 'success', message: 'Profile updated!' });
-        } catch (error) {
+        } catch {
             setNotification({ type: 'error', message: 'Failed to update profile' });
         } finally {
             setSaving(false);
@@ -155,7 +154,6 @@ export default function Profile() {
     // Calculate weight progress
     const weightDiff = formData.weight - formData.goalWeight;
     const isLosingWeight = formData.goalWeight < formData.weight;
-    const isGainingWeight = formData.goalWeight > formData.weight;
     const weightProgress = Math.abs(weightDiff);
     const bmi = formData.weight / Math.pow(formData.height / 100, 2);
 

@@ -59,7 +59,12 @@ router.put(
         body('weight').optional().isFloat({ min: 30, max: 300 }),
         body('goalWeight').optional().isFloat({ min: 30, max: 300 }),
         body('bodyFat').optional().isFloat({ min: 3, max: 60 }),
-        body('age').optional().isInt({ min: 13, max: 120 })
+        body('age').optional().isInt({ min: 13, max: 120 }),
+        body('dailyCalorieGoal').optional().isInt({ min: 800, max: 10000 }),
+        body('dailyBurnGoal').optional().isInt({ min: 0, max: 5000 }),
+        body('activityLevel').optional().isIn(['beginner', 'intermediate', 'advanced']),
+        body('dietaryPreference').optional().isIn(['omnivore', 'vegetarian', 'vegan', 'pescatarian', 'none']),
+        body('targetDate').optional().isISO8601()
     ],
     async (req, res) => {
         try {
@@ -74,7 +79,8 @@ router.put(
             // Fields that can be updated
             const allowedFields = [
                 'height', 'weight', 'goalWeight', 'age', 'gender', 'bodyFat',
-                'goal', 'dailyCalorieGoal', 'dailyBurnGoal', 'profilePicture'
+                'goal', 'dailyCalorieGoal', 'dailyBurnGoal', 'profilePicture',
+                'activityLevel', 'equipment', 'dietaryPreference', 'targetDate'
             ];
 
             // Build update object with only allowed fields
@@ -111,6 +117,11 @@ router.put(
                     dailyCalorieGoal: user.dailyCalorieGoal,
                     dailyBurnGoal: user.dailyBurnGoal,
                     profilePicture: user.profilePicture || '',
+                    onboardingComplete: user.onboardingComplete,
+                    activityLevel: user.activityLevel,
+                    equipment: user.equipment,
+                    dietaryPreference: user.dietaryPreference,
+                    targetDate: user.targetDate,
                     level: user.getLevel()
                 }
             });
@@ -124,6 +135,65 @@ router.put(
         }
     }
 );
+
+router.post('/onboarding', protect, [
+    body('goal').isIn(['weight_loss', 'muscle_gain', 'maintenance', 'endurance']),
+    body('activityLevel').isIn(['beginner', 'intermediate', 'advanced']),
+    body('dietaryPreference').optional().isIn(['omnivore', 'vegetarian', 'vegan', 'pescatarian', 'none']),
+    body('targetDate').optional().isISO8601(),
+    body('equipment').optional().isArray()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
+
+    try {
+        const { goal, activityLevel, dietaryPreference = 'none', targetDate, equipment = [] } = req.body;
+        const calorieDefaults = {
+            weight_loss: { calories: 1800, burn: 400 },
+            muscle_gain: { calories: 2400, burn: 300 },
+            endurance: { calories: 2200, burn: 600 },
+            maintenance: { calories: 2000, burn: 500 }
+        };
+        const defaults = calorieDefaults[goal];
+        const user = await User.findByIdAndUpdate(req.user.id, {
+            $set: {
+                goal,
+                activityLevel,
+                dietaryPreference,
+                equipment: equipment.filter(item => typeof item === 'string').slice(0, 10),
+                targetDate: targetDate ? new Date(targetDate) : null,
+                dailyCalorieGoal: defaults.calories,
+                dailyBurnGoal: defaults.burn,
+                onboardingComplete: true
+            }
+        }, { new: true, runValidators: true });
+
+        res.json({
+            success: true,
+            message: 'Your personalized plan is ready',
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                goal: user.goal,
+                activityLevel: user.activityLevel,
+                dietaryPreference: user.dietaryPreference,
+                equipment: user.equipment,
+                targetDate: user.targetDate,
+                dailyCalorieGoal: user.dailyCalorieGoal,
+                dailyBurnGoal: user.dailyBurnGoal,
+                onboardingComplete: user.onboardingComplete,
+                xp: user.xp,
+                streak: user.streak,
+                profilePicture: user.profilePicture || '',
+                level: user.getLevel()
+            }
+        });
+    } catch (error) {
+        console.error('Onboarding error:', error);
+        res.status(500).json({ success: false, message: 'Unable to save onboarding preferences' });
+    }
+});
 
 /**
  * @route   GET /api/users/stats

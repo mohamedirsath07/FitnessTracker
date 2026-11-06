@@ -5,12 +5,10 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Crown, Copy, LogOut, Trophy, Plus, Check, AlertCircle } from 'lucide-react';
 import { guildAPI } from '../services/api';
-import { useAuth } from '../context/AuthContext';
 import { Card, Button, LoadingScreen } from '../components/ui';
 import NavBar from '../components/NavBar';
 
 export default function Guild() {
-    const { user } = useAuth();
     const [guild, setGuild] = useState(null);
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);

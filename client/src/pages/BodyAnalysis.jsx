@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useCallback, Suspense, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { ArrowLeft, RotateCcw, Activity, Zap, ChevronUp, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '../components/NavBar';
@@ -44,10 +44,6 @@ function SceneLoadingOverlay({ isLoading }) {
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  useEffect(() => {
-    if (!isLoading) setProgress(100);
-  }, [isLoading]);
-
   return (
     <AnimatePresence>
       {isLoading && (
@@ -71,7 +67,7 @@ function SceneLoadingOverlay({ isLoading }) {
               transition={{ duration: 0.3 }}
             />
           </div>
-          <p className="text-[9px] text-zinc-700 mt-2 tabular-nums">{Math.round(progress)}%</p>
+          <p className="text-[9px] text-zinc-700 mt-2 tabular-nums">          {Math.round(isLoading ? progress : 100)}%</p>
         </motion.div>
       )}
     </AnimatePresence>

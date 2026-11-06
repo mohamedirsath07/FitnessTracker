@@ -56,7 +56,7 @@ function AdaptivePerf() {
 function DashboardModel() {
   const groupRef = useRef();
   const modelRef = useRef();
-  const breathRef = useRef(Math.random() * Math.PI * 2);
+  const breathRef = useRef(0);
 
   const gltf = useGLTF('/models/human_body.glb');
 

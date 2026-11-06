@@ -59,7 +59,7 @@ export default function useOfflineSync(apiInstance) {
                     data: item.data,
                 });
                 // Success — don't add back to remaining
-            } catch (err) {
+            } catch {
                 if (item.retries < MAX_RETRIES) {
                     remaining.push({ ...item, retries: item.retries + 1 });
                 }
@@ -96,7 +96,7 @@ export default function useOfflineSync(apiInstance) {
     // Try to process on mount
     useEffect(() => {
         if (navigator.onLine && getQueue().length > 0) {
-            processQueue();
+            setTimeout(processQueue, 0);
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

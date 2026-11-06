@@ -44,7 +44,7 @@ export default function Workout() {
             }
             setLoading(false);
         });
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Filter workouts by type
     const timeBasedWorkouts = workoutTypes.filter(w => w.inputType === 'time');

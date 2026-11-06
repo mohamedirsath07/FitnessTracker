@@ -89,7 +89,7 @@ export default function Dashboard() {
             setLoading(false);
         });
         questAPI.getAll().then(res => setQuests(res.data.quests || [])).catch(() => {});
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchLeaderboard = async () => {
         setLoadingLeaderboard(true);

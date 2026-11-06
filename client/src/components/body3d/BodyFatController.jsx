@@ -9,7 +9,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 const ZONES = [
   { max: 12, label: 'Essential', color: '#60a5fa', accent: '#3b82f6' },

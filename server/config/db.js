@@ -30,6 +30,11 @@ const mongoose = require('mongoose');
  * JavaScript continues running other code while waiting (non-blocking).
  */
 const connectDB = async (retries = 3) => {
+  if (!process.env.MONGO_URI) {
+    console.error('❌ MONGO_URI is not configured. The API will remain available for health diagnostics.');
+    return null;
+  }
+
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const conn = await mongoose.connect(process.env.MONGO_URI, {
@@ -59,8 +64,8 @@ const connectDB = async (retries = 3) => {
       console.error(`❌ MongoDB Connection Attempt ${attempt}/${retries} Failed: ${error.message}`);
       
       if (attempt === retries) {
-        console.error('All connection attempts failed. Exiting...');
-        process.exit(1);
+        console.error('All connection attempts failed. The API will remain available while the database is unavailable.');
+        return null;
       }
       
       // Wait before retrying (exponential backoff)

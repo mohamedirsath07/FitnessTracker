@@ -3,6 +3,7 @@
  * Saves ~1.2MB from bundle. Works on low-end phones.
  */
 
+/* eslint-disable react-refresh/only-export-components */
 import React, { useMemo } from 'react';
 
 // Body fat category helpers

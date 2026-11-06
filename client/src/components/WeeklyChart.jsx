@@ -21,7 +21,7 @@ export default function WeeklyChart({ data = [] }) {
     const chartData = data.map(d => ({ day: d.day, burn: d.burned || 0 }));
 
     return (
-        <div className="h-56 w-full">
+        <div className="h-56 min-h-[224px] w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                     <defs>

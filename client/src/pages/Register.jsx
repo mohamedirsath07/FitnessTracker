@@ -145,7 +145,7 @@ export default function Register() {
             const idToken = await result.user.getIdToken();
             const res = await googleLogin(idToken);
             if (res.success) {
-                navigate('/dashboard');
+                navigate('/');
             }
         } catch (error) {
             console.error('Firebase Google Sign-In Error:', error);
@@ -176,7 +176,7 @@ export default function Register() {
         const result = await register(payload);
 
         if (result.success) {
-            navigate('/dashboard');
+            navigate('/');
         }
         setLoading(false);
     };

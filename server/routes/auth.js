@@ -136,7 +136,8 @@ router.post(
                     goal: user.goal,
                     dailyCalorieGoal: user.dailyCalorieGoal,
                     dailyBurnGoal: user.dailyBurnGoal,
-                    profilePicture: user.profilePicture || ''
+                    profilePicture: user.profilePicture || '',
+                    onboardingComplete: user.onboardingComplete
                 }
             });
 
@@ -257,7 +258,9 @@ router.post(
                     goal: user.goal,
                     dailyCalorieGoal: user.dailyCalorieGoal,
                     dailyBurnGoal: user.dailyBurnGoal,
-                    profilePicture: user.profilePicture || ''
+                    profilePicture: user.profilePicture || '',
+                    onboardingComplete: user.onboardingComplete,
+                    subscription: user.subscription
                 }
             });
 
@@ -309,7 +312,12 @@ router.get('/me', protect, async (req, res) => {
                 profilePicture: user.profilePicture || '',
                 level: user.getLevel(),
                 onboardingComplete: user.onboardingComplete || false,
-                streakFreezes: user.streakData?.freezesAvailable ?? 1
+                streakFreezes: user.streakData?.freezesAvailable ?? 1,
+                activityLevel: user.activityLevel,
+                equipment: user.equipment,
+                dietaryPreference: user.dietaryPreference,
+                targetDate: user.targetDate,
+                subscription: user.subscription
             }
         });
 

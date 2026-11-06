@@ -90,7 +90,7 @@ export default function Nutrition() {
             if (data) { setMeals(data.meals); setSummary(data.summary); }
             setLoading(false);
         });
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         if (notification) {

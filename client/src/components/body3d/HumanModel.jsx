@@ -59,7 +59,7 @@ export default function HumanModel({
 
   const targetFatRef = useRef(bodyFat);
   const currentFatRef = useRef(bodyFat);
-  const breathPhaseRef = useRef(Math.random() * Math.PI * 2);
+  const breathPhaseRef = useRef(0);
 
   const modelPath =
     gender === 'female'
